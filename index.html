@@ -15,10 +15,10 @@
 <link rel="manifest" href="/manifest.json" />
 
 <!-- Icons -->
-<link rel="icon" type="image/png" href="/icons/favicon.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
-<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/icon-152.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
 
 <style>
 /* =========================================================
@@ -1380,7 +1380,7 @@ function renderHome() {
 }
 
 function onGhostTap() {
-  // 點小幽靈換句問候
+  // 點小幽靈換句問候 + 朗讀
   const idx = Math.floor(Math.random() * HOME_GREETINGS.length);
   const g = HOME_GREETINGS[idx];
   document.getElementById('speech-en').textContent = g.en;
@@ -1390,6 +1390,18 @@ function onGhostTap() {
   const ghost = document.getElementById('home-ghost');
   ghost.style.animation = 'none';
   setTimeout(() => { ghost.style.animation = ''; }, 10);
+
+  // 朗讀 (如果支援)
+  if ('speechSynthesis' in window) {
+    if (!voicesReady) loadVoices();
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(g.en);
+    if (englishVoice) u.voice = englishVoice;
+    u.lang = 'en-US';
+    u.rate = 0.95;
+    u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  }
 }
 
 function goPracticeFromHome() {
@@ -1462,9 +1474,10 @@ function renderLesson(level) {
     card.style.animation = 'fadeUp 0.4s both';
     card.innerHTML = `
       <div class="num-tag">${i + 1}</div>
-      <div class="en">${p.en}</div>
-      <div class="zh">${p.zh}</div>
-      <div class="tip">💡 ${p.tip}</div>
+      <div class="en">${escapeHtml(p.en)}</div>
+      <div class="zh">${escapeHtml(p.zh)}</div>
+      <div class="tip">💡 ${escapeHtml(p.tip)}</div>
+      <button class="bubble-action" style="margin-top:10px;background:var(--peach);" data-speak="${escapeAttr(p.en)}">🔊 聽發音</button>
     `;
     list.appendChild(card);
   });
@@ -1481,8 +1494,62 @@ let dialogIndex = 0;
 let userIsGhost = false; // 預設小幽靈先講；true 表示用戶扮演幽靈
 let mediaRecorder = null;
 let audioChunks = [];
-let recordings = {}; // index -> Blob URL
+let recordings = {}; // index -> { blob, url }
 let isRecording = false;
+let currentAudio = null; // 目前正在播放的 audio 元素
+let activeStream = null; // 當前麥克風串流
+
+/* ========== 文字轉語音 (TTS) ========== */
+let voicesReady = false;
+let englishVoice = null;
+
+function loadVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return false;
+  // 優先挑美式英文女聲
+  const preferred = [
+    v => v.lang === 'en-US' && /female|samantha|victoria|karen|moira|tessa|ava|allison/i.test(v.name),
+    v => v.lang === 'en-US',
+    v => v.lang.startsWith('en-'),
+    v => v.default,
+  ];
+  for (const test of preferred) {
+    const found = voices.find(test);
+    if (found) { englishVoice = found; break; }
+  }
+  if (!englishVoice && voices.length) englishVoice = voices[0];
+  voicesReady = true;
+  return true;
+}
+
+if ('speechSynthesis' in window) {
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function speak(text, opts = {}) {
+  return new Promise(resolve => {
+    if (!('speechSynthesis' in window)) { resolve(); return; }
+    // 取消之前的朗讀
+    window.speechSynthesis.cancel();
+    if (!voicesReady) loadVoices();
+    const u = new SpeechSynthesisUtterance(text);
+    if (englishVoice) u.voice = englishVoice;
+    u.lang = 'en-US';
+    u.rate = opts.rate || 0.92; // 稍慢方便學習
+    u.pitch = opts.pitch || 1.05;
+    u.volume = 1;
+    u.onend = resolve;
+    u.onerror = resolve;
+    window.speechSynthesis.speak(u);
+    // 防呆：5 秒沒結束就強制 resolve
+    setTimeout(resolve, 5000);
+  });
+}
+
+function stopSpeaking() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+}
 
 function startPractice() {
   showScreen('practice');
@@ -1494,6 +1561,11 @@ function startPractice() {
   document.getElementById('record-bar').style.display = 'flex';
   updateRolePill();
   document.getElementById('dialog-area').innerHTML = '';
+  // 解鎖 iOS 的語音 (要在用戶手勢內呼叫一次空的)
+  if ('speechSynthesis' in window) {
+    const dummy = new SpeechSynthesisUtterance('');
+    window.speechSynthesis.speak(dummy);
+  }
   advanceDialog();
 }
 
@@ -1503,11 +1575,12 @@ function restartPractice() {
 
 function exitPractice() {
   if (mediaRecorder && isRecording) stopRecording();
+  stopSpeaking();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   showScreen('map-screen');
 }
 
 function updateRolePill() {
-  const userTurn = isUserTurn();
   if (userIsGhost) {
     document.getElementById('role-icon').textContent = '🧑';
     document.getElementById('role-text').textContent = '你扮演小幽靈';
@@ -1520,29 +1593,23 @@ function updateRolePill() {
 function isUserTurn() {
   if (dialogIndex >= currentLevelData.dialog.length) return false;
   const turn = currentLevelData.dialog[dialogIndex];
-  // 預設：speaker === 'user' 就是用戶輪
-  // 交換後：speaker === 'ghost' 是用戶輪
   if (userIsGhost) return turn.speaker === 'ghost';
   return turn.speaker === 'user';
 }
 
 function swapRoles() {
-  // 在當前進度交換 — 重新走目前這一句
   userIsGhost = !userIsGhost;
   updateRolePill();
-  // 加一個提示泡泡
   const area = document.getElementById('dialog-area');
   const note = document.createElement('div');
   note.style.cssText = 'text-align:center;font-family:Caveat,cursive;font-size:18px;color:var(--ink-soft);padding:8px;';
   note.textContent = userIsGhost ? '🔄 換你扮演小幽靈囉！' : '🔄 換回小幽靈先講';
   area.appendChild(note);
-  // 重新渲染當前輪 (因為角色換了，按鈕狀態要更新)
   renderCurrentTurn();
 }
 
 function advanceDialog() {
   if (dialogIndex >= currentLevelData.dialog.length) {
-    // 對話結束
     document.getElementById('record-bar').style.display = 'none';
     document.getElementById('next-bar').classList.add('show');
     state.daily.talkedWithGhost = true;
@@ -1552,7 +1619,7 @@ function advanceDialog() {
   renderCurrentTurn();
 }
 
-function renderCurrentTurn() {
+async function renderCurrentTurn() {
   const turn = currentLevelData.dialog[dialogIndex];
   const userTurn = isUserTurn();
   const area = document.getElementById('dialog-area');
@@ -1564,8 +1631,9 @@ function renderCurrentTurn() {
     card.id = 'turn-card-' + dialogIndex;
     card.innerHTML = `
       <div class="label">${userIsGhost ? '👻 換你當小幽靈說' : '🎙️ 換你說'}</div>
-      <div class="prompt">${turn.en}</div>
-      <div class="hint">${turn.zh}${turn.hint ? ' · 提示：' + turn.hint : ''}</div>
+      <div class="prompt">${escapeHtml(turn.en)}</div>
+      <div class="hint">${escapeHtml(turn.zh)}${turn.hint ? ' · 提示：' + escapeHtml(turn.hint) : ''}</div>
+      <button class="bubble-action" style="margin-top:10px;background:var(--paper);" data-speak="${escapeAttr(turn.en)}">🔊 聽範例</button>
     `;
     area.appendChild(card);
     setStatus('照著上面的句子唸，按🎙️開始錄音');
@@ -1573,22 +1641,27 @@ function renderCurrentTurn() {
     document.getElementById('play-btn').disabled = true;
     document.getElementById('next-btn').disabled = true;
   } else {
-    // 對方輪 — 直接顯示泡泡
+    // 對方輪 — 直接顯示泡泡 + 朗讀
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (turn.speaker === 'ghost' ? 'ghost' : 'user');
     bubble.innerHTML = `
       <div class="speaker">${turn.speaker === 'ghost' ? '👻 Ghost' : '🧑 You'}</div>
-      <div class="en">${turn.en}</div>
-      <div class="zh">${turn.zh}</div>
+      <div class="en">${escapeHtml(turn.en)}</div>
+      <div class="zh">${escapeHtml(turn.zh)}</div>
+      <div class="bubble-actions">
+        <button class="bubble-action" data-speak="${escapeAttr(turn.en)}">🔊 再聽一次</button>
+      </div>
     `;
     area.appendChild(bubble);
-    setStatus('小幽靈說完了，準備換你...');
-    // 短暫延遲後進到下一輪
-    setTimeout(() => {
-      dialogIndex++;
-      area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      advanceDialog();
-    }, 1400);
+    setStatus('🔊 小幽靈說話中...', true);
+    setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+    // 朗讀完才往下一輪
+    await speak(turn.en);
+    setStatus('準備換你...');
+    await new Promise(r => setTimeout(r, 400));
+    dialogIndex++;
+    advanceDialog();
+    return;
   }
   setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
 }
@@ -1599,69 +1672,194 @@ function setStatus(text, live = false) {
   s.classList.toggle('live', live);
 }
 
+// 防 XSS / 引號問題
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// data-attribute 用：屬性值會被 HTML decode，但屬性裡只需處理引號和 <
+function escapeAttr(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 事件代理：點任何 [data-speak] 都朗讀
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-speak]');
+  if (btn) {
+    const text = btn.getAttribute('data-speak');
+    if (text) speak(text);
+  }
+  const playBtn = e.target.closest('[data-play-rec]');
+  if (playBtn) {
+    const idx = parseInt(playBtn.getAttribute('data-play-rec'), 10);
+    playSavedRecording(idx);
+  }
+});
+
 /* ========== 錄音 ========== */
 async function toggleRecord() {
   if (!isRecording) await startRecording();
   else stopRecording();
 }
 
+// 找瀏覽器最相容的錄音格式
+function pickMimeType() {
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/ogg;codecs=opus',
+    ''
+  ];
+  for (const t of candidates) {
+    if (t === '' || (window.MediaRecorder && MediaRecorder.isTypeSupported(t))) return t;
+  }
+  return '';
+}
+
 async function startRecording() {
+  // 停掉小幽靈說話避免錄到
+  stopSpeaking();
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    });
+    activeStream = stream;
     audioChunks = [];
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    const mime = pickMimeType();
+    const recOpts = mime ? { mimeType: mime } : {};
+    mediaRecorder = new MediaRecorder(stream, recOpts);
+    mediaRecorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) audioChunks.push(e.data);
+    };
     mediaRecorder.onstop = () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const finalType = mediaRecorder.mimeType || 'audio/webm';
+      const blob = new Blob(audioChunks, { type: finalType });
+      // 釋放舊的
+      if (recordings[dialogIndex]) {
+        try { URL.revokeObjectURL(recordings[dialogIndex].url); } catch(e){}
+      }
       const url = URL.createObjectURL(blob);
-      recordings[dialogIndex] = url;
+      recordings[dialogIndex] = { blob, url, type: finalType };
+      // 關掉麥克風
       stream.getTracks().forEach(t => t.stop());
+      activeStream = null;
       document.getElementById('play-btn').disabled = false;
       document.getElementById('next-btn').disabled = false;
-      setStatus('錄好了！按▶試聽，按✓進到下一句');
+      setStatus('✅ 錄好了！按▶試聽，按✓進到下一句');
+      stopMeter();
     };
-    mediaRecorder.start();
+    mediaRecorder.onerror = e => {
+      console.error('Recorder error', e);
+      setStatus('⚠️ 錄音出錯了，請再試一次');
+    };
+    // 加 timeslice 確保有資料
+    mediaRecorder.start(250);
     isRecording = true;
     document.getElementById('rec-btn').classList.add('recording');
     setStatus('🔴 錄音中... 唸完再按一次停止', true);
+    startMeter(stream);
   } catch (err) {
-    setStatus('⚠️ 無法使用麥克風，請在設定允許');
     console.error(err);
+    if (err.name === 'NotAllowedError') {
+      setStatus('⚠️ 麥克風被拒絕了，請到瀏覽器設定允許');
+    } else if (err.name === 'NotFoundError') {
+      setStatus('⚠️ 找不到麥克風');
+    } else {
+      setStatus('⚠️ 無法錄音：' + err.message);
+    }
   }
 }
 
 function stopRecording() {
   if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
+    try { mediaRecorder.stop(); } catch(e){}
     isRecording = false;
     document.getElementById('rec-btn').classList.remove('recording');
   }
 }
 
+/* ========== 音量視覺化 ========== */
+let meterCtx, meterAnalyser, meterRAF;
+function startMeter(stream) {
+  try {
+    meterCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = meterCtx.createMediaStreamSource(stream);
+    meterAnalyser = meterCtx.createAnalyser();
+    meterAnalyser.fftSize = 256;
+    source.connect(meterAnalyser);
+    const data = new Uint8Array(meterAnalyser.frequencyBinCount);
+    const recBtn = document.getElementById('rec-btn');
+    function tick() {
+      meterAnalyser.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length; // 0-255
+      const scale = 1 + Math.min(avg / 100, 0.5);
+      recBtn.style.transform = `scale(${scale})`;
+      meterRAF = requestAnimationFrame(tick);
+    }
+    tick();
+  } catch (e) { console.warn('meter failed', e); }
+}
+function stopMeter() {
+  if (meterRAF) cancelAnimationFrame(meterRAF);
+  meterRAF = null;
+  const recBtn = document.getElementById('rec-btn');
+  if (recBtn) recBtn.style.transform = '';
+  if (meterCtx) { try { meterCtx.close(); } catch(e){} meterCtx = null; }
+}
+
+/* ========== 播放 ========== */
 function playRecording() {
-  const url = recordings[dialogIndex];
-  if (!url) return;
-  const audio = new Audio(url);
-  audio.play();
+  const rec = recordings[dialogIndex];
+  if (!rec) return;
+  // 先停掉現有的
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} }
+  stopSpeaking();
+  const audio = new Audio();
+  audio.src = rec.url;
+  audio.preload = 'auto';
+  audio.playsInline = true;
+  currentAudio = audio;
   setStatus('🔊 播放錄音中...');
-  audio.onended = () => setStatus('滿意就按✓ 不滿意可以重錄');
+  audio.onended = () => {
+    setStatus('滿意就按✓ 不滿意可以重錄');
+    currentAudio = null;
+  };
+  audio.onerror = () => {
+    setStatus('⚠️ 播放失敗，可能是格式問題，試試重錄');
+    currentAudio = null;
+  };
+  // 播放可能會被 promise reject (autoplay policy)
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') {
+    p.catch(err => {
+      console.error('Play failed', err);
+      setStatus('⚠️ 點擊任意處後再按▶ 試試');
+    });
+  }
 }
 
 function confirmTurn() {
-  // 把這一輪轉成正式氣泡顯示在對話流
   const card = document.getElementById('turn-card-' + dialogIndex);
   const turn = currentLevelData.dialog[dialogIndex];
-  const url = recordings[dialogIndex];
+  const rec = recordings[dialogIndex];
 
   if (card) {
     const bubble = document.createElement('div');
-    const isGhostBubble = userIsGhost; // 如果用戶扮演幽靈，這句就放幽靈側
+    const isGhostBubble = userIsGhost;
     bubble.className = 'bubble ' + (isGhostBubble ? 'ghost' : 'user');
+    const recId = 'rec-' + dialogIndex;
     bubble.innerHTML = `
       <div class="speaker">${isGhostBubble ? '👻 You as Ghost' : '🧑 You'}</div>
-      <div class="en">${turn.en}</div>
-      <div class="zh">${turn.zh}</div>
-      ${url ? `<div class="bubble-actions"><button class="bubble-action" onclick="playSavedRecording('${url}')">▶ 重聽</button></div>` : ''}
+      <div class="en">${escapeHtml(turn.en)}</div>
+      <div class="zh">${escapeHtml(turn.zh)}</div>
+      <div class="bubble-actions">
+        ${rec ? `<button class="bubble-action" data-play-rec="${dialogIndex}">▶ 重聽</button>` : ''}
+        <button class="bubble-action" data-speak="${escapeAttr(turn.en)}">🔊 範例</button>
+      </div>
     `;
     card.replaceWith(bubble);
   }
@@ -1670,15 +1868,27 @@ function confirmTurn() {
   advanceDialog();
 }
 
-function playSavedRecording(url) {
-  new Audio(url).play();
+function playSavedRecording(idx) {
+  const rec = recordings[idx];
+  if (!rec) return;
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} }
+  stopSpeaking();
+  const a = new Audio(rec.url);
+  a.playsInline = true;
+  currentAudio = a;
+  a.onended = () => { currentAudio = null; };
+  a.play().catch(err => console.error('Play failed', err));
 }
 
 /* ========== 完成 ========== */
 function finishLesson() {
   // 釋放錄音 URL
-  Object.values(recordings).forEach(u => URL.revokeObjectURL(u));
+  Object.values(recordings).forEach(rec => {
+    if (rec && rec.url) { try { URL.revokeObjectURL(rec.url); } catch(e){} }
+  });
   recordings = {};
+  stopSpeaking();
+  if (currentAudio) { try { currentAudio.pause(); } catch(e){} currentAudio = null; }
 
   // 標記完成
   if (!state.completed.includes(currentLevelData.id)) {
