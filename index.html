@@ -441,8 +441,42 @@ html, body {
   justify-content: center;
   padding: 18px 0;
 }
-.level-node:nth-child(odd) { transform: translateX(-60px); }
-.level-node:nth-child(even) { transform: translateX(60px); }
+.level-node:nth-of-type(odd) { transform: translateX(-60px); }
+.level-node:nth-of-type(even) { transform: translateX(60px); }
+.level-node[data-pos="left"] { transform: translateX(-60px); }
+.level-node[data-pos="right"] { transform: translateX(60px); }
+
+/* tier 分隔線 */
+.tier-sep {
+  width: calc(100% - 40px);
+  margin: 30px 20px 14px;
+  text-align: center;
+  position: relative;
+  padding: 14px 0 6px;
+  border-top: 2px dashed rgba(61, 46, 38, 0.25);
+}
+.tier-sep:first-child {
+  margin-top: 8px;
+  border-top: none;
+}
+.tier-label {
+  display: inline-block;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: 14px;
+  box-shadow: var(--shadow-soft);
+  margin-top: -28px;
+}
+.tier-desc {
+  font-family: 'Caveat', cursive;
+  font-size: 18px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+}
 
 .level-circle {
   width: 90px;
@@ -664,6 +698,161 @@ html, body {
   align-items: center;
   gap: 4px;
   box-shadow: var(--shadow-soft);
+}
+
+/* === 練習頁小幽靈舞台 === */
+.practice-ghost-stage {
+  position: relative;
+  margin: 18px 22px 8px;
+  padding: 14px 18px 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,229,160,0.35));
+  border: 2.5px solid var(--ink);
+  border-radius: 28px;
+  box-shadow: var(--shadow-deep);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+}
+.practice-ghost-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 230, 200, 0.6), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(212, 197, 249, 0.5), transparent 40%);
+  pointer-events: none;
+}
+
+.practice-ghost {
+  position: relative;
+  width: 100px;
+  height: 110px;
+  flex-shrink: 0;
+  z-index: 1;
+  animation: ghostIdle 3.2s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+.practice-ghost svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 12px rgba(255, 139, 106, 0.25));
+}
+
+/* 浮動動畫 */
+@keyframes ghostIdle {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+
+/* 講話狀態 — 身體更大幅度晃動 */
+.practice-ghost[data-mood="talking"] {
+  animation: ghostTalk 0.55s ease-in-out infinite;
+}
+@keyframes ghostTalk {
+  0%, 100% { transform: translateY(-4px) rotate(-4deg) scale(1); }
+  50% { transform: translateY(-10px) rotate(4deg) scale(1.04); }
+}
+
+/* 講話狀態 — 嘴巴張開閉合 */
+.practice-ghost[data-mood="talking"] .mouth-smile { opacity: 0; }
+.practice-ghost[data-mood="talking"] .mouth-talk {
+  animation: mouthTalk 0.32s ease-in-out infinite;
+}
+@keyframes mouthTalk {
+  0%, 100% { opacity: 1; ry: 1.5; }
+  50% { opacity: 1; ry: 6; }
+}
+
+/* 聽用戶說話 — 眼睛轉向 */
+.practice-ghost[data-mood="listening"] {
+  animation: ghostListen 2s ease-in-out infinite;
+}
+@keyframes ghostListen {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-3px) rotate(-1deg); }
+  75% { transform: translateY(-3px) rotate(1deg); }
+}
+.practice-ghost[data-mood="listening"] .eye-l,
+.practice-ghost[data-mood="listening"] .eye-r {
+  transform: translateY(2px);
+}
+.practice-ghost[data-mood="listening"] .mouth-smile {
+  d: path('M92 118 Q100 122 108 118');
+}
+
+/* 開心狀態 — 眨眼 */
+.practice-ghost[data-mood="happy"] .eye-l,
+.practice-ghost[data-mood="happy"] .eye-r {
+  animation: blink 1.4s ease-in-out;
+  transform-origin: center;
+}
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+/* 即時對話泡泡 — 漫畫風格指向小幽靈 */
+.ghost-live-bubble {
+  position: relative;
+  flex: 1;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 20px;
+  padding: 12px 16px;
+  min-height: 60px;
+  z-index: 1;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.ghost-live-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 14px solid var(--ink);
+}
+.ghost-live-bubble::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 12px solid var(--paper);
+}
+.ghost-live-bubble.silent {
+  opacity: 0.5;
+}
+.ghost-live-bubble.active {
+  animation: bubbleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bubbleIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.live-en {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+.live-zh {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
 }
 
 .dialog-area {
@@ -1096,6 +1285,43 @@ html, body {
       <button class="swap-btn" onclick="swapRoles()">⇄ 交換</button>
     </div>
 
+    <!-- 會動的小幽靈舞台 -->
+    <div class="practice-ghost-stage">
+      <div class="practice-ghost" id="practice-ghost" data-mood="idle">
+        <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="bodyGradP" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#F5EFFF"/>
+            </radialGradient>
+          </defs>
+          <!-- 身體 -->
+          <path d="M100 20 C50 20 30 60 30 100 L30 195 C30 200 35 202 38 198 L52 182 C55 178 60 178 63 182 L77 198 C80 202 85 202 88 198 L102 182 C105 178 110 178 113 182 L127 198 C130 202 135 202 138 198 L152 182 C155 178 160 178 163 182 L172 192 C175 196 180 194 180 188 L180 100 C180 60 150 20 100 20 Z"
+                fill="url(#bodyGradP)" stroke="#3D2E26" stroke-width="3.5" stroke-linejoin="round" class="ghost-body"/>
+          <!-- 腮紅 -->
+          <ellipse cx="58" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65" class="ghost-cheek-l"/>
+          <ellipse cx="142" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65" class="ghost-cheek-r"/>
+          <!-- 眼睛 -->
+          <g class="ghost-eyes">
+            <ellipse cx="78" cy="95" rx="7" ry="9" fill="#3D2E26" class="eye-l"/>
+            <ellipse cx="122" cy="95" rx="7" ry="9" fill="#3D2E26" class="eye-r"/>
+            <ellipse cx="80" cy="92" rx="2.5" ry="3" fill="#fff"/>
+            <ellipse cx="124" cy="92" rx="2.5" ry="3" fill="#fff"/>
+          </g>
+          <!-- 嘴巴 (會變形) -->
+          <g class="ghost-mouth">
+            <path class="mouth-smile" d="M88 115 Q100 125 112 115" stroke="#3D2E26" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <ellipse class="mouth-talk" cx="100" cy="118" rx="6" ry="4" fill="#3D2E26" opacity="0"/>
+          </g>
+        </svg>
+      </div>
+      <!-- 小幽靈即時對話泡泡 -->
+      <div class="ghost-live-bubble" id="ghost-live-bubble">
+        <div class="live-en" id="live-en">Ready when you are!</div>
+        <div class="live-zh" id="live-zh">準備好就開始吧！</div>
+      </div>
+    </div>
+
     <div class="dialog-area" id="dialog-area"></div>
 
     <div class="record-bar" id="record-bar">
@@ -1153,8 +1379,9 @@ html, body {
    關卡資料 — 美式日常情境 6 關
    ========================================================= */
 const LEVELS = [
+  // ========== 入門：日常打招呼 ==========
   {
-    id: 1, emoji: '👋',
+    id: 1, emoji: '👋', tier: 'beginner',
     title: 'Saying Hi',
     desc: '跟美國人日常打招呼',
     phrases: [
@@ -1174,7 +1401,7 @@ const LEVELS = [
     ]
   },
   {
-    id: 2, emoji: '☕',
+    id: 2, emoji: '☕', tier: 'beginner',
     title: 'Ordering Coffee',
     desc: '在咖啡店點一杯飲料',
     phrases: [
@@ -1194,7 +1421,7 @@ const LEVELS = [
     ]
   },
   {
-    id: 3, emoji: '🍔',
+    id: 3, emoji: '🍔', tier: 'beginner',
     title: 'At a Restaurant',
     desc: '在餐廳點餐、要帳單',
     phrases: [
@@ -1214,7 +1441,7 @@ const LEVELS = [
     ]
   },
   {
-    id: 4, emoji: '🛍️',
+    id: 4, emoji: '🛍️', tier: 'beginner',
     title: 'Shopping',
     desc: '逛街、試穿、結帳',
     phrases: [
@@ -1234,7 +1461,7 @@ const LEVELS = [
     ]
   },
   {
-    id: 5, emoji: '🚕',
+    id: 5, emoji: '🚕', tier: 'beginner',
     title: 'Getting Around',
     desc: '搭車、問路、Uber',
     phrases: [
@@ -1253,8 +1480,10 @@ const LEVELS = [
       { speaker: 'user',  en: "Thanks so much for your help!", zh: "非常感謝你的幫忙！", hint: "誠懇道謝" },
     ]
   },
+
+  // ========== 中級：派對社交 + 工作場合 ==========
   {
-    id: 6, emoji: '🎉',
+    id: 6, emoji: '🎉', tier: 'intermediate',
     title: 'Small Talk at a Party',
     desc: '派對上跟陌生人聊天',
     phrases: [
@@ -1266,11 +1495,295 @@ const LEVELS = [
     ],
     dialog: [
       { speaker: 'ghost', en: "Hey, I don't think we've met. I'm Alex.", zh: "嘿，我們應該還沒見過，我是 Alex。" },
-      { speaker: 'user',  en: "Hi Alex, I'm [your name]. Nice to meet you!", zh: "嗨 Alex，我是 [你的名字]，很高興認識你！", hint: "回名字 + 'Nice to meet you'" },
+      { speaker: 'user',  en: "Hi Alex, I'm Jamie. Nice to meet you!", zh: "嗨 Alex，我是 Jamie，很高興認識你！", hint: "回名字 + 'Nice to meet you'" },
       { speaker: 'ghost', en: "So how do you know the host?", zh: "你怎麼認識主人的？" },
       { speaker: 'user',  en: "We work together. How about you?", zh: "我們同事。你呢？", hint: "簡單回答 + 反問" },
       { speaker: 'ghost', en: "We went to college together. What do you do?", zh: "我們大學同學。你是做什麼的？" },
       { speaker: 'user',  en: "I'm a designer. It was great chatting with you!", zh: "我是設計師。跟你聊得很愉快！", hint: "答工作 + 收尾" },
+    ]
+  },
+  {
+    id: 7, emoji: '📞', tier: 'intermediate',
+    title: 'Phone Calls',
+    desc: '接電話、打電話、留言',
+    phrases: [
+      { en: "Hi, this is Jamie speaking.", zh: "嗨，我是 Jamie。", tip: "接電話自報姓名最標準的講法。" },
+      { en: "Could I speak to Mr. Chen, please?", zh: "請問陳先生在嗎？", tip: "打電話找人禮貌的問法。" },
+      { en: "Hold on a second, I'll get him.", zh: "稍等一下，我去叫他。", tip: "幫忙轉接時最自然。" },
+      { en: "Can I take a message?", zh: "需要我幫你留言嗎？", tip: "對方要找的人不在時用。" },
+      { en: "Could you have her call me back?", zh: "可以請她回電給我嗎？", tip: "'call back' 是回電的固定講法。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hello, this is Casey speaking.", zh: "你好，我是 Casey。" },
+      { speaker: 'user',  en: "Hi Casey, could I speak to Mr. Chen, please?", zh: "嗨 Casey，請問陳先生在嗎？", hint: "用 'Could I speak to'" },
+      { speaker: 'ghost', en: "I'm sorry, he's in a meeting right now.", zh: "抱歉，他現在在開會。" },
+      { speaker: 'user',  en: "Could you have him call me back?", zh: "可以請他回電給我嗎？", hint: "請求回電" },
+      { speaker: 'ghost', en: "Sure, what's your number?", zh: "當然，你的電話幾號？" },
+      { speaker: 'user',  en: "It's 555-1234. Thanks so much!", zh: "555-1234。非常感謝！", hint: "報號碼 + 道謝" },
+    ]
+  },
+  {
+    id: 8, emoji: '🏥', tier: 'intermediate',
+    title: 'At the Doctor',
+    desc: '看醫生、描述症狀',
+    phrases: [
+      { en: "I'm not feeling well.", zh: "我不太舒服。", tip: "描述身體不適最簡單的開場。" },
+      { en: "I have a sore throat and a runny nose.", zh: "我喉嚨痛還流鼻水。", tip: "'sore throat' 喉嚨痛、'runny nose' 流鼻水。" },
+      { en: "It's been going on for three days.", zh: "已經三天了。", tip: "'going on for' 持續多久的固定講法。" },
+      { en: "Is it serious?", zh: "嚴重嗎？", tip: "想知道病情嚴不嚴重就問這句。" },
+      { en: "How often should I take this?", zh: "這個多久吃一次？", tip: "拿藥時必問。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "What seems to be the problem today?", zh: "今天怎麼了？" },
+      { speaker: 'user',  en: "I'm not feeling well. I have a sore throat and a runny nose.", zh: "我不太舒服，喉嚨痛還流鼻水。", hint: "描述兩個症狀" },
+      { speaker: 'ghost', en: "How long has this been going on?", zh: "這樣多久了？" },
+      { speaker: 'user',  en: "It's been going on for three days.", zh: "已經三天了。", hint: "用 'going on for'" },
+      { speaker: 'ghost', en: "Sounds like a cold. I'll prescribe some medicine.", zh: "聽起來是感冒。我開些藥給你。" },
+      { speaker: 'user',  en: "Thanks. How often should I take this?", zh: "謝謝。這個多久吃一次？", hint: "問服藥頻率" },
+    ]
+  },
+  {
+    id: 9, emoji: '🏨', tier: 'intermediate',
+    title: 'Hotel Check-in',
+    desc: '飯店入住、客房問題',
+    phrases: [
+      { en: "I have a reservation under Lin.", zh: "我有訂房，姓林。", tip: "'under [姓氏]' 是查訂位的標準講法。" },
+      { en: "What time is checkout?", zh: "幾點要退房？", tip: "入住時順便確認很方便。" },
+      { en: "Is breakfast included?", zh: "有附早餐嗎？", tip: "問是否包含早餐。" },
+      { en: "Could I get extra towels?", zh: "可以多給我幾條毛巾嗎？", tip: "'extra' 表示額外的。" },
+      { en: "The Wi-Fi isn't working in my room.", zh: "我房間的 Wi-Fi 不能用。", tip: "客訴時最常見的問題。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Welcome! Do you have a reservation?", zh: "歡迎！您有訂房嗎？" },
+      { speaker: 'user',  en: "Yes, I have a reservation under Lin.", zh: "有，我有訂房，姓林。", hint: "用 'under' + 姓氏" },
+      { speaker: 'ghost', en: "Found it. You're in room 502.", zh: "找到了，您住 502 房。" },
+      { speaker: 'user',  en: "Great. Is breakfast included?", zh: "好的。有附早餐嗎？", hint: "問早餐" },
+      { speaker: 'ghost', en: "Yes, from 7 to 10 AM in the lobby.", zh: "有，早上 7 到 10 點在大廳。" },
+      { speaker: 'user',  en: "Perfect. What time is checkout?", zh: "太好了。幾點退房？", hint: "問退房時間" },
+    ]
+  },
+  {
+    id: 10, emoji: '✈️', tier: 'intermediate',
+    title: 'At the Airport',
+    desc: '機場報到、安檢、找登機門',
+    phrases: [
+      { en: "I'd like to check in for flight UA 872.", zh: "我要報到 UA 872 航班。", tip: "'check in for' + 航班號碼。" },
+      { en: "Can I get a window seat?", zh: "可以給我靠窗座位嗎？", tip: "靠窗 window、靠走道 aisle。" },
+      { en: "Just one carry-on.", zh: "只有一個手提行李。", tip: "'carry-on' = 手提行李。" },
+      { en: "Where's gate B12?", zh: "B12 登機門在哪？", tip: "找登機門最直接。" },
+      { en: "Has the flight been delayed?", zh: "航班有延誤嗎？", tip: "怕飛機誤點時必問。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Good afternoon. Where are you flying to today?", zh: "午安。今天要飛去哪裡？" },
+      { speaker: 'user',  en: "I'd like to check in for flight UA 872 to Tokyo.", zh: "我要報到去東京的 UA 872。", hint: "用 'check in for' + 航班" },
+      { speaker: 'ghost', en: "Sure. Any bags to check?", zh: "好的。有行李要託運嗎？" },
+      { speaker: 'user',  en: "Just one carry-on. Can I get a window seat?", zh: "只有一個手提行李。可以給我靠窗座位嗎？", hint: "說明行李 + 要求座位" },
+      { speaker: 'ghost', en: "I have 24A available. Here's your boarding pass.", zh: "24A 可以，這是您的登機證。" },
+      { speaker: 'user',  en: "Thanks. Where's gate B12?", zh: "謝謝。B12 登機門在哪？", hint: "找登機門" },
+    ]
+  },
+
+  // ========== 中高級：工作場合 + 比較細的社交 ==========
+  {
+    id: 11, emoji: '💼', tier: 'upper',
+    title: 'Job Interview',
+    desc: '面試自我介紹、答常見題',
+    phrases: [
+      { en: "Thanks for taking the time to meet with me.", zh: "謝謝您撥空跟我見面。", tip: "面試開場標配，加分句。" },
+      { en: "I have five years of experience in marketing.", zh: "我有五年行銷經驗。", tip: "講經歷的固定句型。" },
+      { en: "I'm passionate about user experience.", zh: "我對使用者體驗很有熱情。", tip: "'passionate about' = 熱愛。" },
+      { en: "One of my biggest strengths is problem-solving.", zh: "我最大的優點之一是解決問題的能力。", tip: "回答強項題的標準起手。" },
+      { en: "Do you have any questions for me?", zh: "你有什麼問題想問嗎？", tip: "面試最後常被問到，要準備幾個問題。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Thanks for coming in. Tell me a bit about yourself.", zh: "謝謝你來。簡單介紹一下自己。" },
+      { speaker: 'user',  en: "Thanks for taking the time. I have five years of experience in marketing.", zh: "謝謝您撥空。我有五年行銷經驗。", hint: "感謝 + 講經歷" },
+      { speaker: 'ghost', en: "Great. What are your biggest strengths?", zh: "很好。你最大的強項是什麼？" },
+      { speaker: 'user',  en: "One of my biggest strengths is problem-solving.", zh: "我最大的優點之一是解決問題的能力。", hint: "套用 'one of my biggest strengths is'" },
+      { speaker: 'ghost', en: "Why are you interested in this role?", zh: "你為什麼對這個職位有興趣？" },
+      { speaker: 'user',  en: "I'm passionate about user experience, and this role is a perfect fit.", zh: "我對使用者體驗很有熱情，這份工作很適合我。", hint: "用 'passionate about'" },
+    ]
+  },
+  {
+    id: 12, emoji: '🤝', tier: 'upper',
+    title: 'Business Meeting',
+    desc: '會議發言、表達意見、收尾',
+    phrases: [
+      { en: "I'd like to add something to that.", zh: "我想補充一下。", tip: "想接話的禮貌講法。" },
+      { en: "Could you walk us through the numbers?", zh: "可以帶我們看一下這些數字嗎？", tip: "'walk through' = 一步步講解。" },
+      { en: "I see your point, but I think...", zh: "我了解你的意思，但我認為…", tip: "禮貌反對的萬用句型。" },
+      { en: "Let's circle back to this later.", zh: "這個我們之後再回來討論。", tip: "美式商務超常用，'circle back' = 回頭再談。" },
+      { en: "I'll follow up with you by Friday.", zh: "我週五前會跟進。", tip: "'follow up' = 後續處理。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "So, what are your thoughts on the proposal?", zh: "那麼，你對這個提案有什麼想法？" },
+      { speaker: 'user',  en: "I see your point, but I think we need more data.", zh: "我了解你的意思，但我覺得需要更多數據。", hint: "用 'I see your point, but'" },
+      { speaker: 'ghost', en: "Fair enough. Could you walk us through your concerns?", zh: "有道理。可以帶我們看一下你的疑慮嗎？" },
+      { speaker: 'user',  en: "Sure. I'd like to add something to that as well.", zh: "當然。我想再補充一些。", hint: "用 'I'd like to add'" },
+      { speaker: 'ghost', en: "Let's circle back to this in our next meeting.", zh: "下次會議再回來討論這個。" },
+      { speaker: 'user',  en: "Sounds good. I'll follow up with you by Friday.", zh: "好的。我週五前會跟進。", hint: "'follow up by' + 時間" },
+    ]
+  },
+  {
+    id: 13, emoji: '📧', tier: 'upper',
+    title: 'Writing Emails',
+    desc: '寫客氣專業的工作 email',
+    phrases: [
+      { en: "I hope this email finds you well.", zh: "希望您一切都好。", tip: "經典工作 email 開場白。" },
+      { en: "I'm reaching out about the project timeline.", zh: "我寫信是為了專案時程的事。", tip: "'reaching out' = 主動聯繫。" },
+      { en: "Could you let me know by end of day?", zh: "可以在今天下班前回覆我嗎？", tip: "美式 email 常用 'EOD' = 下班前。" },
+      { en: "Just wanted to circle back on this.", zh: "想來追一下這件事。", tip: "催進度時超委婉的講法。" },
+      { en: "Looking forward to hearing from you.", zh: "期待您的回覆。", tip: "email 結尾標準句。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hey, did you get my email about the deadline?", zh: "嘿，你有收到我關於截止日的信嗎？" },
+      { speaker: 'user',  en: "I did, but I just wanted to circle back on this.", zh: "有收到，但我想再追一下這件事。", hint: "用 'circle back on'" },
+      { speaker: 'ghost', en: "Sure, what's up?", zh: "當然，怎麼了？" },
+      { speaker: 'user',  en: "Could you let me know by end of day if Friday works?", zh: "你下班前可以回覆我週五行不行嗎？", hint: "用 'by end of day'" },
+      { speaker: 'ghost', en: "Yeah, Friday should work. I'll confirm soon.", zh: "週五應該可以，我盡快確認。" },
+      { speaker: 'user',  en: "Thanks! Looking forward to hearing from you.", zh: "謝謝！期待你的回覆。", hint: "用 email 標準收尾" },
+    ]
+  },
+  {
+    id: 14, emoji: '🎬', tier: 'upper',
+    title: 'Talking About Movies',
+    desc: '聊電影、推薦劇、表達感想',
+    phrases: [
+      { en: "Have you seen the new Marvel movie?", zh: "你看過新的漫威電影嗎？", tip: "聊電影開場萬用句。" },
+      { en: "It was a bit of a letdown, honestly.", zh: "老實說有點讓人失望。", tip: "'letdown' = 讓人失望，比 'disappointing' 口語。" },
+      { en: "The plot twist totally caught me off guard.", zh: "那個劇情轉折完全讓我措手不及。", tip: "'caught me off guard' = 出乎意料。" },
+      { en: "I couldn't put it down.", zh: "我捨不得停下來。", tip: "本來指看書，看劇也通用。" },
+      { en: "It's right up your alley.", zh: "這超對你胃口的。", tip: "'up your alley' = 你會喜歡的菜。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Have you seen the new Marvel movie?", zh: "你看過新的漫威電影嗎？" },
+      { speaker: 'user',  en: "Yeah! The plot twist totally caught me off guard.", zh: "看了！那個劇情轉折完全讓我措手不及。", hint: "用 'caught me off guard'" },
+      { speaker: 'ghost', en: "Right? I didn't see it coming either.", zh: "對吧？我也沒料到。" },
+      { speaker: 'user',  en: "Honestly, I couldn't put it down. What did you think?", zh: "說真的，我看到停不下來。你覺得呢？", hint: "用 'couldn't put it down'" },
+      { speaker: 'ghost', en: "Same here. Have you watched 'The Bear'?", zh: "我也是。你看過 'The Bear' 嗎？" },
+      { speaker: 'user',  en: "Not yet, but I heard it's right up my alley.", zh: "還沒，但聽說很對我的胃口。", hint: "用 'right up my alley'" },
+    ]
+  },
+  {
+    id: 15, emoji: '🏋️', tier: 'upper',
+    title: 'Sports & Hobbies',
+    desc: '聊運動、興趣、健身',
+    phrases: [
+      { en: "I've been getting into yoga lately.", zh: "我最近開始迷上瑜伽。", tip: "'getting into' = 開始喜歡上某事。" },
+      { en: "I'm trying to stay active.", zh: "我想盡量保持活動量。", tip: "比 'I exercise' 自然多了。" },
+      { en: "Do you work out regularly?", zh: "你有固定運動嗎？", tip: "問運動習慣最普通的講法。" },
+      { en: "I'm not really into team sports.", zh: "我不太喜歡團體運動。", tip: "'into' = 喜歡，加 'not really' 委婉。" },
+      { en: "It's a great way to unwind.", zh: "這是個放鬆的好方法。", tip: "'unwind' = 放鬆、解壓。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Do you work out regularly?", zh: "你有固定運動嗎？" },
+      { speaker: 'user',  en: "Yeah, I've been getting into yoga lately.", zh: "有，我最近迷上瑜伽。", hint: "用 'getting into'" },
+      { speaker: 'ghost', en: "Oh nice! What got you started?", zh: "不錯耶！怎麼開始的？" },
+      { speaker: 'user',  en: "It's a great way to unwind after work.", zh: "這是下班後放鬆的好方法。", hint: "用 'unwind'" },
+      { speaker: 'ghost', en: "Makes sense. Do you do anything else?", zh: "有道理。你有做其他運動嗎？" },
+      { speaker: 'user',  en: "Not really. I'm not into team sports.", zh: "沒什麼。我不太喜歡團體運動。", hint: "用 'not into'" },
+    ]
+  },
+
+  // ========== 進階：抽象話題 + 文化深度 ==========
+  {
+    id: 16, emoji: '💭', tier: 'advanced',
+    title: 'Sharing Opinions',
+    desc: '表達看法、禮貌反對',
+    phrases: [
+      { en: "If you ask me, it's not worth it.", zh: "依我看，不值得。", tip: "口語表達意見最自然的開頭。" },
+      { en: "I have mixed feelings about that.", zh: "我對這件事有點矛盾。", tip: "'mixed feelings' = 心情複雜。" },
+      { en: "I get where you're coming from.", zh: "我懂你的立場。", tip: "表達同理心的高級句型。" },
+      { en: "That's a fair point, but...", zh: "有道理，不過…", tip: "禮貌反對前的緩衝。" },
+      { en: "I'm on the fence about it.", zh: "我還沒決定耶。", tip: "'on the fence' = 還在猶豫。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "What do you think about working from home full-time?", zh: "你覺得完全在家工作怎麼樣？" },
+      { speaker: 'user',  en: "Honestly, I have mixed feelings about that.", zh: "老實說，我有點矛盾。", hint: "用 'mixed feelings'" },
+      { speaker: 'ghost', en: "How come?", zh: "怎麼說？" },
+      { speaker: 'user',  en: "If you ask me, it's flexible but kind of isolating.", zh: "依我看，它很彈性但有點孤立。", hint: "用 'if you ask me'" },
+      { speaker: 'ghost', en: "I see your point. I love the flexibility though.", zh: "我懂你的意思。不過我很愛這個彈性。" },
+      { speaker: 'user',  en: "That's a fair point, but I miss seeing my coworkers.", zh: "有道理，不過我蠻想念同事的。", hint: "用 'fair point, but'" },
+    ]
+  },
+  {
+    id: 17, emoji: '😔', tier: 'advanced',
+    title: 'Difficult Conversations',
+    desc: '尷尬話題、安慰、道歉',
+    phrases: [
+      { en: "I'm so sorry to hear that.", zh: "聽到這個我很難過。", tip: "別人遇到壞事的標準回應。" },
+      { en: "Is there anything I can do?", zh: "有什麼我可以幫忙的嗎？", tip: "表達關心最真誠的講法。" },
+      { en: "I didn't mean it that way.", zh: "我不是那個意思。", tip: "解開誤會的關鍵句。" },
+      { en: "I owe you an apology.", zh: "我該跟你道歉。", tip: "正式道歉前的開場。" },
+      { en: "Take all the time you need.", zh: "你慢慢來，不用急。", tip: "讓對方放心的暖心句。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "I've been having a really tough week.", zh: "我這禮拜過得很不好。" },
+      { speaker: 'user',  en: "I'm so sorry to hear that. What's going on?", zh: "聽到這個我很難過。發生什麼事了？", hint: "同理 + 關心" },
+      { speaker: 'ghost', en: "Just stuff at work. I'm overwhelmed.", zh: "工作的事，我快崩潰了。" },
+      { speaker: 'user',  en: "Is there anything I can do?", zh: "有什麼我可以幫忙的嗎？", hint: "主動表達想幫忙" },
+      { speaker: 'ghost', en: "Just listening helps a lot, honestly.", zh: "老實說，光是聽我講就幫很大了。" },
+      { speaker: 'user',  en: "Of course. Take all the time you need.", zh: "當然。你慢慢來，不用急。", hint: "用 'take all the time'" },
+    ]
+  },
+  {
+    id: 18, emoji: '💰', tier: 'advanced',
+    title: 'Money & Negotiation',
+    desc: '談錢、議價、討論薪水',
+    phrases: [
+      { en: "Is there any wiggle room on the price?", zh: "價格有議價空間嗎？", tip: "'wiggle room' = 議價空間，超道地。" },
+      { en: "That's a bit out of my budget.", zh: "這有點超出我的預算。", tip: "委婉表達太貴。" },
+      { en: "What kind of compensation are you offering?", zh: "你們提供的待遇是？", tip: "正式問薪水，'compensation' 比 'salary' 廣。" },
+      { en: "I was hoping for something closer to 80K.", zh: "我希望接近 80K 左右。", tip: "談薪水的標準句型。" },
+      { en: "Let me think it over and get back to you.", zh: "我考慮一下再回覆你。", tip: "不馬上答應的安全牌。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "We're prepared to offer you 70K a year.", zh: "我們可以提供你年薪 70K。" },
+      { speaker: 'user',  en: "Thanks. I was hoping for something closer to 80K.", zh: "謝謝。我希望接近 80K 左右。", hint: "用 'hoping for something closer to'" },
+      { speaker: 'ghost', en: "I see. Is the rest of the package working for you?", zh: "了解。其他福利你還滿意嗎？" },
+      { speaker: 'user',  en: "Mostly, yes. Is there any wiggle room on the salary?", zh: "大致上滿意。薪水有議價空間嗎？", hint: "用 'wiggle room'" },
+      { speaker: 'ghost', en: "Let me check with the team and get back to you.", zh: "我跟團隊確認一下再回覆你。" },
+      { speaker: 'user',  en: "Sounds great. Let me think it over and get back to you too.", zh: "太好了。我也考慮一下再回覆你。", hint: "用 'think it over'" },
+    ]
+  },
+  {
+    id: 19, emoji: '🌍', tier: 'advanced',
+    title: 'Cultural Differences',
+    desc: '聊文化、表達好奇、避免冒犯',
+    phrases: [
+      { en: "I've noticed that... is different here.", zh: "我發現…在這裡不太一樣。", tip: "中性觀察的禮貌起手。" },
+      { en: "Where I come from, we usually...", zh: "我老家那邊，我們通常…", tip: "分享自己文化的中性句型。" },
+      { en: "I hope this doesn't come across as rude.", zh: "希望這樣聽起來不會失禮。", tip: "問敏感問題前的緩衝。" },
+      { en: "That's such an interesting tradition.", zh: "這個傳統真的很有趣。", tip: "尊重又顯興趣的回應。" },
+      { en: "I'm still getting used to it.", zh: "我還在習慣中。", tip: "誠實表達文化適應的過程。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "How are you finding life in the States so far?", zh: "你覺得在美國生活如何？" },
+      { speaker: 'user',  en: "I'm still getting used to it, honestly.", zh: "老實說，我還在習慣中。", hint: "用 'getting used to it'" },
+      { speaker: 'ghost', en: "Yeah, it can take a while. What stands out the most?", zh: "對，要花點時間。最特別的是什麼？" },
+      { speaker: 'user',  en: "I've noticed tipping culture is really different here.", zh: "我發現小費文化在這裡很不一樣。", hint: "用 'I've noticed... is different'" },
+      { speaker: 'ghost', en: "Oh yeah, that throws a lot of people off.", zh: "對啊，很多人都不太適應。" },
+      { speaker: 'user',  en: "Where I come from, we usually don't tip at all.", zh: "我老家那邊，我們通常不給小費。", hint: "用 'where I come from'" },
+    ]
+  },
+  {
+    id: 20, emoji: '🚀', tier: 'advanced',
+    title: 'Big Life Decisions',
+    desc: '討論未來規劃、人生選擇',
+    phrases: [
+      { en: "I've been giving it a lot of thought.", zh: "我想了很久。", tip: "'give it thought' 比 'think about it' 高一階。" },
+      { en: "It's a once-in-a-lifetime opportunity.", zh: "這是千載難逢的機會。", tip: "形容超棒的機會。" },
+      { en: "I'm leaning towards taking the offer.", zh: "我傾向接受這個 offer。", tip: "'leaning towards' = 偏向某個選擇。" },
+      { en: "I don't want to look back and regret it.", zh: "我不想以後回頭後悔。", tip: "做重大決定的經典句。" },
+      { en: "Whatever happens, I'll figure it out.", zh: "不管怎樣我都會想辦法的。", tip: "面對未知時的灑脫句型。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "So have you decided about the job in New York?", zh: "那紐約那份工作你決定了嗎？" },
+      { speaker: 'user',  en: "I've been giving it a lot of thought.", zh: "我想了很久。", hint: "用 'giving it a lot of thought'" },
+      { speaker: 'ghost', en: "It's a big move. What are you thinking?", zh: "這搬遷不小耶。你怎麼想？" },
+      { speaker: 'user',  en: "Honestly, I'm leaning towards taking the offer.", zh: "老實說，我傾向接受這個 offer。", hint: "用 'leaning towards'" },
+      { speaker: 'ghost', en: "What's pushing you that way?", zh: "什麼讓你偏向那邊？" },
+      { speaker: 'user',  en: "It's a once-in-a-lifetime opportunity. I don't want to regret it.", zh: "這是千載難逢的機會。我不想後悔。", hint: "用 'once-in-a-lifetime' + 'regret'" },
     ]
   },
 ];
@@ -1421,7 +1934,26 @@ function renderMap() {
 
   const path = document.getElementById('map-path');
   path.innerHTML = '';
+
+  const tierLabels = {
+    beginner: { label: '🌱 入門', desc: '日常基礎' },
+    intermediate: { label: '🌿 進階', desc: '社交工作' },
+    upper: { label: '🌳 中高級', desc: '職場深聊' },
+    advanced: { label: '🌟 高階', desc: '抽象話題' },
+  };
+  let lastTier = null;
+
   LEVELS.forEach(level => {
+    // tier 分隔
+    if (level.tier && level.tier !== lastTier) {
+      const sep = document.createElement('div');
+      sep.className = 'tier-sep';
+      const t = tierLabels[level.tier] || { label: level.tier, desc: '' };
+      sep.innerHTML = `<div class="tier-label">${t.label}</div><div class="tier-desc">${t.desc}</div>`;
+      path.appendChild(sep);
+      lastTier = level.tier;
+    }
+
     const node = document.createElement('div');
     node.className = 'level-node';
     let cls = 'locked';
@@ -1561,6 +2093,9 @@ function startPractice() {
   document.getElementById('record-bar').style.display = 'flex';
   updateRolePill();
   document.getElementById('dialog-area').innerHTML = '';
+  // 初始化小幽靈
+  setGhostMood('idle');
+  setLiveBubble("Let's start! Listen to me first 💫", "我們開始吧！先聽我說～", true);
   // 解鎖 iOS 的語音 (要在用戶手勢內呼叫一次空的)
   if ('speechSynthesis' in window) {
     const dummy = new SpeechSynthesisUtterance('');
@@ -1614,9 +2149,31 @@ function advanceDialog() {
     document.getElementById('next-bar').classList.add('show');
     state.daily.talkedWithGhost = true;
     saveState();
+    setGhostMood('happy');
+    setLiveBubble("Awesome job! 🎉", "你太棒了！", true);
     return;
   }
   renderCurrentTurn();
+}
+
+function setGhostMood(mood) {
+  const g = document.getElementById('practice-ghost');
+  if (g) g.setAttribute('data-mood', mood);
+}
+
+function setLiveBubble(en, zh, animate = true) {
+  const bubble = document.getElementById('ghost-live-bubble');
+  const enEl = document.getElementById('live-en');
+  const zhEl = document.getElementById('live-zh');
+  if (!bubble || !enEl || !zhEl) return;
+  enEl.textContent = en;
+  zhEl.textContent = zh;
+  bubble.classList.remove('silent');
+  if (animate) {
+    bubble.classList.remove('active');
+    void bubble.offsetWidth; // 強制重排觸發動畫
+    bubble.classList.add('active');
+  }
 }
 
 async function renderCurrentTurn() {
@@ -1625,6 +2182,14 @@ async function renderCurrentTurn() {
   const area = document.getElementById('dialog-area');
 
   if (userTurn) {
+    // 小幽靈進入「聆聽」狀態
+    setGhostMood('listening');
+    setLiveBubble(
+      userIsGhost ? '👀 我在聽你扮演我...' : '👀 換你說囉，我聽你的~',
+      userIsGhost ? '對著我講你要表達的句子' : '照著下面的句子說',
+      true
+    );
+
     // 換用戶開口 — 顯示提示卡
     const card = document.createElement('div');
     card.className = 'your-turn-card';
@@ -1641,7 +2206,12 @@ async function renderCurrentTurn() {
     document.getElementById('play-btn').disabled = true;
     document.getElementById('next-btn').disabled = true;
   } else {
-    // 對方輪 — 直接顯示泡泡 + 朗讀
+    // 對方輪 — 小幽靈說話
+    // 即時泡泡先顯示
+    setLiveBubble(turn.en, turn.zh, true);
+    setGhostMood('talking');
+
+    // 也加進對話流
     const bubble = document.createElement('div');
     bubble.className = 'bubble ' + (turn.speaker === 'ghost' ? 'ghost' : 'user');
     bubble.innerHTML = `
@@ -1655,8 +2225,10 @@ async function renderCurrentTurn() {
     area.appendChild(bubble);
     setStatus('🔊 小幽靈說話中...', true);
     setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+
     // 朗讀完才往下一輪
     await speak(turn.en);
+    setGhostMood('happy');
     setStatus('準備換你...');
     await new Promise(r => setTimeout(r, 400));
     dialogIndex++;
@@ -1748,6 +2320,8 @@ async function startRecording() {
       document.getElementById('play-btn').disabled = false;
       document.getElementById('next-btn').disabled = false;
       setStatus('✅ 錄好了！按▶試聽，按✓進到下一句');
+      setGhostMood('happy');
+      setLiveBubble('Nice! 想再錄就再錄一次 🎙️', '滿意就按 ✓ 繼續', true);
       stopMeter();
     };
     mediaRecorder.onerror = e => {
@@ -1759,6 +2333,8 @@ async function startRecording() {
     isRecording = true;
     document.getElementById('rec-btn').classList.add('recording');
     setStatus('🔴 錄音中... 唸完再按一次停止', true);
+    setGhostMood('listening');
+    setLiveBubble('🎧 我在仔細聽...', '說完再按一次停止', true);
     startMeter(stream);
   } catch (err) {
     console.error(err);
