@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#FFE9D6" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Boo Talk" />
+<meta name="description" content="跟可愛小幽靈一對一練習美式日常英文口說。情境關卡、即時錄音、隨時回放。" />
+<title>Boo Talk · 跟小幽靈練英文</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json" />
+
+<!-- Icons -->
+<link rel="icon" type="image/png" href="/icons/favicon.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+
+<style>
+/* =========================================================
+   字型 — 用 Fraunces (有手繪感的優雅 serif) + Nunito (圓潤sans)
+   ========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --cream: #FFF5E8;
+  --peach: #FFE9D6;
+  --peach-deep: #FFD4B0;
+  --coral: #FF8B6A;
+  --coral-deep: #E66B4A;
+  --rose: #FFB6A8;
+  --mint: #B8E6D5;
+  --mint-deep: #7DCEB0;
+  --lavender: #D4C5F9;
+  --butter: #FFE5A0;
+  --ink: #3D2E26;
+  --ink-soft: #6B5848;
+  --paper: #FFFBF4;
+  --shadow-soft: 0 4px 0 rgba(61, 46, 38, 0.08);
+  --shadow-deep: 0 6px 0 rgba(61, 46, 38, 0.15);
+  --shadow-press: 0 2px 0 rgba(61, 46, 38, 0.15);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--peach);
+  color: var(--ink);
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--peach);
+}
+
+/* 噪點紙質背景，營造手繪感 */
+#app::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse at top left, rgba(255, 230, 200, 0.5), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(212, 197, 249, 0.3), transparent 60%);
+  z-index: 0;
+}
+#app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/></svg>");
+  opacity: 0.5;
+  z-index: 0;
+  mix-blend-mode: multiply;
+}
+
+.screen {
+  position: relative;
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  z-index: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.screen.active {
+  display: flex;
+  animation: fadeUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================
+   通用元件
+   ========================================================= */
+.top-bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: max(env(safe-area-inset-top), 14px) 18px 14px;
+  z-index: 10;
+  background: linear-gradient(to bottom, var(--peach) 60%, transparent);
+}
+.top-bar h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.top-bar .back-btn {
+  width: 42px;
+  height: 42px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.top-bar .back-btn:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-press);
+}
+
+.btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  padding: 14px 28px;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-deep);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  letter-spacing: 0.02em;
+}
+.btn:active {
+  transform: translateY(4px);
+  box-shadow: var(--shadow-press);
+}
+.btn.primary { background: var(--coral); color: white; }
+.btn.mint { background: var(--mint); }
+.btn.butter { background: var(--butter); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   首頁 — 小幽靈打招呼
+   ========================================================= */
+#home {
+  padding-bottom: max(env(safe-area-inset-bottom), 100px);
+}
+
+.home-header {
+  padding: max(env(safe-area-inset-top), 20px) 22px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.streak-badge {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-soft);
+}
+.greeting {
+  font-family: 'Caveat', cursive;
+  font-size: 28px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.ghost-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 24px 24px;
+}
+
+.ghost {
+  position: relative;
+  width: 200px;
+  height: 220px;
+  cursor: pointer;
+  animation: ghostFloat 3.5s ease-in-out infinite;
+  transition: transform 0.2s;
+}
+.ghost:active { transform: scale(0.95); }
+@keyframes ghostFloat {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+.ghost svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 16px rgba(255, 139, 106, 0.25));
+}
+
+/* 對話泡泡 */
+.speech-bubble {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 24px;
+  padding: 18px 22px;
+  margin: 16px 24px 24px;
+  position: relative;
+  box-shadow: var(--shadow-deep);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 60px;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  background: var(--paper);
+  border-left: 2.5px solid var(--ink);
+  border-top: 2.5px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+.speech-bubble .en {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.speech-bubble .zh {
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* 主要動作卡片 */
+.action-stack {
+  padding: 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.action-card {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 24px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-deep);
+  transition: transform 0.12s, box-shadow 0.12s;
+  position: relative;
+  overflow: hidden;
+}
+.action-card:active {
+  transform: translateY(3px);
+  box-shadow: var(--shadow-press);
+}
+.action-card.featured {
+  background: linear-gradient(135deg, var(--coral) 0%, var(--rose) 100%);
+  color: white;
+}
+.action-card.featured .action-title { color: white; }
+.action-card.featured .action-sub { color: rgba(255,255,255,0.85); }
+
+.action-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+  background: var(--peach);
+  border-radius: 16px;
+  border: 2px solid var(--ink);
+}
+.action-card.featured .action-icon {
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(255,255,255,0.9);
+}
+.action-text { flex: 1; }
+.action-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 19px;
+  margin-bottom: 2px;
+  color: var(--ink);
+}
+.action-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.action-arrow { font-size: 22px; color: var(--ink); }
+.action-card.featured .action-arrow { color: white; }
+
+/* 每日任務卡 */
+.daily-card {
+  margin: 18px 22px 0;
+  background: var(--mint);
+  border: 2.5px solid var(--ink);
+  border-radius: 24px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-deep);
+}
+.daily-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.daily-title {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.daily-progress-text {
+  font-weight: 800;
+  font-size: 14px;
+}
+.daily-bar {
+  height: 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.daily-bar-fill {
+  height: 100%;
+  background: var(--coral);
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%);
+  background-size: 16px 16px;
+  animation: barShift 1s linear infinite;
+}
+@keyframes barShift {
+  from { background-position: 0 0; }
+  to { background-position: 16px 0; }
+}
+.daily-tasks {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.daily-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.daily-task .check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.daily-task.done .check {
+  background: var(--ink);
+  color: white;
+}
+.daily-task.done .label {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* =========================================================
+   地圖頁 — 關卡地圖
+   ========================================================= */
+#map-screen {
+  background: linear-gradient(180deg, #FFE9D6 0%, #FFD4B0 50%, #FFE9D6 100%);
+}
+.map-container {
+  position: relative;
+  padding: 12px 0 max(env(safe-area-inset-bottom), 40px);
+  flex: 1;
+}
+.map-path {
+  position: relative;
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.level-node {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 18px 0;
+}
+.level-node:nth-child(odd) { transform: translateX(-60px); }
+.level-node:nth-child(even) { transform: translateX(60px); }
+
+.level-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-deep);
+  position: relative;
+  transition: transform 0.15s;
+}
+.level-circle:active { transform: translateY(3px); box-shadow: var(--shadow-press); }
+.level-circle.unlocked { background: var(--butter); }
+.level-circle.current {
+  background: var(--coral);
+  animation: pulseCurrent 2s ease-in-out infinite;
+}
+@keyframes pulseCurrent {
+  0%, 100% { box-shadow: 0 6px 0 rgba(61,46,38,0.15), 0 0 0 0 rgba(255,139,106,0.5); }
+  50% { box-shadow: 0 6px 0 rgba(61,46,38,0.15), 0 0 0 14px rgba(255,139,106,0); }
+}
+.level-circle.completed { background: var(--mint-deep); color: white; }
+.level-circle.locked {
+  background: #E8DDD0;
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-soft);
+  opacity: 0.85;
+}
+.level-emoji { font-size: 30px; margin-bottom: 2px; }
+.level-num {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+}
+.level-label {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: var(--shadow-soft);
+}
+
+/* 連接線：用 SVG 虛線 */
+.path-line {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.map-header-card {
+  margin: 12px 22px 0;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 24px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-deep);
+}
+.map-header-card .num {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: var(--coral);
+  line-height: 1;
+}
+
+/* =========================================================
+   學習頁 — 一關裡的句子卡
+   ========================================================= */
+#lesson {
+  padding-bottom: max(env(safe-area-inset-bottom), 120px);
+}
+.lesson-hero {
+  margin: 0 22px;
+  padding: 24px 22px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 28px;
+  box-shadow: var(--shadow-deep);
+  text-align: center;
+}
+.lesson-hero .emoji {
+  font-size: 56px;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: wiggle 2.4s ease-in-out infinite;
+}
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+.lesson-hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.lesson-hero p {
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.section-label {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  margin: 28px 26px 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.phrase-card {
+  margin: 0 22px 12px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 22px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+}
+.phrase-card .num-tag {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  background: var(--butter);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.phrase-card .en {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.phrase-card .zh {
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.phrase-card .tip {
+  font-size: 12px;
+  color: var(--ink-soft);
+  background: var(--peach);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-style: italic;
+}
+
+.cta-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 22px max(env(safe-area-inset-bottom), 18px);
+  background: linear-gradient(to top, var(--peach) 70%, transparent);
+  z-index: 5;
+}
+.cta-fixed .btn { width: 100%; }
+
+/* =========================================================
+   對話練習頁
+   ========================================================= */
+#practice {
+  background: linear-gradient(180deg, var(--peach) 0%, var(--lavender) 100%);
+  padding-bottom: max(env(safe-area-inset-bottom), 200px);
+}
+
+.practice-header {
+  margin: 0 22px;
+  padding: 14px 18px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.role-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 13px;
+  background: var(--butter);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+.swap-btn {
+  background: var(--mint);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: var(--shadow-soft);
+}
+
+.dialog-area {
+  padding: 16px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bubble {
+  max-width: 82%;
+  padding: 14px 18px;
+  border-radius: 22px;
+  border: 2.5px solid var(--ink);
+  box-shadow: var(--shadow-soft);
+  animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bubblePop {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.bubble.ghost {
+  background: var(--paper);
+  align-self: flex-start;
+  border-bottom-left-radius: 8px;
+}
+.bubble.user {
+  background: var(--coral);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 8px;
+}
+.bubble.user .en { color: white; }
+.bubble .speaker {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+.bubble .en {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.bubble .zh {
+  font-size: 13px;
+  opacity: 0.8;
+  font-weight: 600;
+}
+.bubble.user .zh { opacity: 0.9; }
+
+.bubble-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.bubble-action {
+  background: rgba(255,255,255,0.95);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink);
+}
+.bubble.user .bubble-action { background: white; }
+
+.your-turn-card {
+  margin: 0 18px;
+  padding: 16px 18px;
+  background: var(--butter);
+  border: 2.5px dashed var(--ink);
+  border-radius: 22px;
+  text-align: center;
+}
+.your-turn-card .label {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.your-turn-card .prompt {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.your-turn-card .hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* 錄音控制條 */
+.record-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 18px max(env(safe-area-inset-bottom), 16px);
+  background: var(--paper);
+  border-top: 2.5px solid var(--ink);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.record-status {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ink-soft);
+  min-height: 18px;
+}
+.record-status.live { color: var(--coral-deep); }
+.record-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.rec-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--coral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-deep);
+  transition: transform 0.15s;
+  position: relative;
+}
+.rec-btn:active { transform: translateY(3px); box-shadow: var(--shadow-press); }
+.rec-btn .inner {
+  width: 28px;
+  height: 28px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.rec-btn.recording {
+  background: var(--ink);
+  animation: recPulse 1.2s ease-in-out infinite;
+}
+.rec-btn.recording .inner {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--coral);
+}
+@keyframes recPulse {
+  0%, 100% { box-shadow: 0 6px 0 rgba(61,46,38,0.15), 0 0 0 0 rgba(255,139,106,0.6); }
+  50% { box-shadow: 0 6px 0 rgba(61,46,38,0.15), 0 0 0 16px rgba(255,139,106,0); }
+}
+.rec-aux {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+.rec-aux:active { transform: translateY(2px); box-shadow: var(--shadow-press); }
+.rec-aux:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.next-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 18px max(env(safe-area-inset-bottom), 18px);
+  background: linear-gradient(to top, var(--paper) 70%, transparent);
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.next-bar.show { display: flex; }
+.next-bar .btn { width: 100%; }
+
+/* =========================================================
+   完成頁
+   ========================================================= */
+#done {
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+#done .ghost {
+  width: 180px;
+  height: 200px;
+  margin-bottom: 20px;
+}
+.done-card {
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 28px;
+  padding: 32px 24px;
+  box-shadow: var(--shadow-deep);
+  width: 100%;
+  max-width: 360px;
+}
+.done-card h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.done-card .sub {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+.stars {
+  font-size: 36px;
+  margin-bottom: 18px;
+  letter-spacing: 6px;
+}
+.done-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 通用工具 */
+.thinking-dots span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  margin: 0 2px;
+  animation: thinking 1.4s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes thinking {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* 安裝提示 */
+.install-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: max(env(safe-area-inset-bottom), 16px);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.install-toast.show { display: flex; }
+.install-toast .text { flex: 1; font-size: 13px; font-weight: 600; }
+.install-toast button {
+  background: var(--butter);
+  color: var(--ink);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+.install-toast .close-x {
+  background: transparent;
+  color: var(--paper);
+  font-size: 18px;
+  padding: 4px 8px;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===================== 首頁 ===================== -->
+  <section id="home" class="screen active">
+    <div class="home-header">
+      <div>
+        <div class="greeting" id="greeting">Hi there!</div>
+        <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:800;">Boo Talk</div>
+      </div>
+      <div class="streak-badge">🔥 <span id="streak">0</span> day</div>
+    </div>
+
+    <div class="ghost-stage">
+      <div class="ghost" id="home-ghost" onclick="onGhostTap()">
+        <!-- 內嵌可愛幽靈 SVG -->
+        <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="100%" stop-color="#F5EFFF"/>
+            </radialGradient>
+          </defs>
+          <!-- 身體 -->
+          <path d="M100 20 C50 20 30 60 30 100 L30 195 C30 200 35 202 38 198 L52 182 C55 178 60 178 63 182 L77 198 C80 202 85 202 88 198 L102 182 C105 178 110 178 113 182 L127 198 C130 202 135 202 138 198 L152 182 C155 178 160 178 163 182 L172 192 C175 196 180 194 180 188 L180 100 C180 60 150 20 100 20 Z"
+                fill="url(#bodyGrad)" stroke="#3D2E26" stroke-width="3.5" stroke-linejoin="round"/>
+          <!-- 腮紅 -->
+          <ellipse cx="58" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65"/>
+          <ellipse cx="142" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65"/>
+          <!-- 眼睛 -->
+          <ellipse cx="78" cy="95" rx="7" ry="9" fill="#3D2E26"/>
+          <ellipse cx="122" cy="95" rx="7" ry="9" fill="#3D2E26"/>
+          <ellipse cx="80" cy="92" rx="2.5" ry="3" fill="#fff"/>
+          <ellipse cx="124" cy="92" rx="2.5" ry="3" fill="#fff"/>
+          <!-- 嘴巴 -->
+          <path d="M88 115 Q100 125 112 115" stroke="#3D2E26" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div class="speech-bubble" id="ghost-speech">
+        <div class="en" id="speech-en">Hi! Ready to chat today?</div>
+        <div class="zh" id="speech-zh">嗨！今天要不要來聊聊天呀？</div>
+      </div>
+    </div>
+
+    <div class="action-stack">
+      <div class="action-card featured" onclick="goPracticeFromHome()">
+        <div class="action-icon">👻</div>
+        <div class="action-text">
+          <div class="action-title">跟小幽靈聊天</div>
+          <div class="action-sub">用今天學的句子，直接開口</div>
+        </div>
+        <div class="action-arrow">→</div>
+      </div>
+
+      <div class="action-card" onclick="showScreen('map-screen')">
+        <div class="action-icon">🗺️</div>
+        <div class="action-text">
+          <div class="action-title">情境冒險地圖</div>
+          <div class="action-sub" id="map-sub">第 1 關 · 跟美國人打招呼</div>
+        </div>
+        <div class="action-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="daily-card">
+      <div class="daily-head">
+        <div class="daily-title">✨ 今日任務</div>
+        <div class="daily-progress-text"><span id="daily-done">0</span>/3</div>
+      </div>
+      <div class="daily-bar">
+        <div class="daily-bar-fill" id="daily-fill" style="width: 0%"></div>
+      </div>
+      <div class="daily-tasks" id="daily-tasks-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 地圖頁 ===================== -->
+  <section id="map-screen" class="screen">
+    <div class="top-bar">
+      <div class="back-btn" onclick="showScreen('home')">←</div>
+      <h2>Adventure Map</h2>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="map-header-card">
+      <div class="num"><span id="map-current">1</span>/<span id="map-total">6</span></div>
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:600;">繼續你的冒險</div>
+        <div style="font-size:13px;color:var(--ink-soft);font-weight:600;">每一關都是一個美式日常情境</div>
+      </div>
+    </div>
+
+    <div class="map-container">
+      <div class="map-path" id="map-path"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 學習頁 ===================== -->
+  <section id="lesson" class="screen">
+    <div class="top-bar">
+      <div class="back-btn" onclick="showScreen('map-screen')">←</div>
+      <h2 id="lesson-top-title">Level 1</h2>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="lesson-hero">
+      <div class="emoji" id="lesson-emoji">👋</div>
+      <h1 id="lesson-title">Saying Hi</h1>
+      <p id="lesson-desc">跟美國人打招呼，從這幾句開始</p>
+    </div>
+
+    <div class="section-label">Today's phrases</div>
+    <div id="phrases-list"></div>
+
+    <div class="cta-fixed">
+      <button class="btn primary" onclick="startPractice()">開始跟小幽靈練習 →</button>
+    </div>
+  </section>
+
+  <!-- ===================== 練習頁 ===================== -->
+  <section id="practice" class="screen">
+    <div class="top-bar">
+      <div class="back-btn" onclick="exitPractice()">←</div>
+      <h2 id="practice-title">Practice</h2>
+      <div style="width:42px;"></div>
+    </div>
+
+    <div class="practice-header">
+      <div class="role-pill">
+        <span id="role-icon">👻</span>
+        <span id="role-text">小幽靈先講</span>
+      </div>
+      <button class="swap-btn" onclick="swapRoles()">⇄ 交換</button>
+    </div>
+
+    <div class="dialog-area" id="dialog-area"></div>
+
+    <div class="record-bar" id="record-bar">
+      <div class="record-status" id="record-status">點擊麥克風開始錄音</div>
+      <div class="record-controls">
+        <button class="rec-aux" id="play-btn" onclick="playRecording()" disabled>▶</button>
+        <button class="rec-btn" id="rec-btn" onclick="toggleRecord()">
+          <div class="inner"></div>
+        </button>
+        <button class="rec-aux" id="next-btn" onclick="confirmTurn()" disabled>✓</button>
+      </div>
+    </div>
+
+    <div class="next-bar" id="next-bar">
+      <button class="btn primary" onclick="finishLesson()">這關完成 ✨</button>
+      <button class="btn" onclick="restartPractice()">再練一次</button>
+    </div>
+  </section>
+
+  <!-- ===================== 完成頁 ===================== -->
+  <section id="done" class="screen">
+    <div class="ghost">
+      <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 20 C50 20 30 60 30 100 L30 195 C30 200 35 202 38 198 L52 182 C55 178 60 178 63 182 L77 198 C80 202 85 202 88 198 L102 182 C105 178 110 178 113 182 L127 198 C130 202 135 202 138 198 L152 182 C155 178 160 178 163 182 L172 192 C175 196 180 194 180 188 L180 100 C180 60 150 20 100 20 Z"
+              fill="#FFFFFF" stroke="#3D2E26" stroke-width="3.5" stroke-linejoin="round"/>
+        <ellipse cx="58" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65"/>
+        <ellipse cx="142" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65"/>
+        <path d="M70 92 L86 100 M114 100 L130 92" stroke="#3D2E26" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M85 115 Q100 130 115 115" stroke="#3D2E26" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="done-card">
+      <div class="stars">⭐⭐⭐</div>
+      <h1>Awesome!</h1>
+      <div class="sub" id="done-sub">你完成了第 1 關！</div>
+      <div class="done-actions">
+        <button class="btn primary" onclick="goNextLevel()" id="next-level-btn">前往下一關 →</button>
+        <button class="btn" onclick="showScreen('home')">回首頁</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- 安裝提示 -->
+<div class="install-toast" id="install-toast">
+  <div class="text">把 Boo Talk 加到主畫面，隨時練習！</div>
+  <button onclick="installPWA()">安裝</button>
+  <button class="close-x" onclick="document.getElementById('install-toast').classList.remove('show')">✕</button>
+</div>
+
+<script>
+/* =========================================================
+   關卡資料 — 美式日常情境 6 關
+   ========================================================= */
+const LEVELS = [
+  {
+    id: 1, emoji: '👋',
+    title: 'Saying Hi',
+    desc: '跟美國人日常打招呼',
+    phrases: [
+      { en: "Hey, what's up?", zh: "嘿，最近怎樣？", tip: "美國朋友間最常用的招呼語，比 'How are you' 隨意多了。" },
+      { en: "How's it going?", zh: "最近還好嗎？", tip: "另一個超常見的開場，回 'Good, you?' 就行。" },
+      { en: "Good to see you!", zh: "看到你真好！", tip: "認識的人見面時用，很有溫度。" },
+      { en: "Long time no see.", zh: "好久不見。", tip: "這句源自中式英文但美國人也愛用了，完全 OK。" },
+      { en: "Not much, just chillin'.", zh: "沒什麼，就放鬆中。", tip: "回答 'What's up?' 的標準答案，超道地。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hey, what's up?", zh: "嘿，最近怎樣？" },
+      { speaker: 'user',  en: "Not much, just chillin'. How about you?", zh: "沒什麼，就放鬆中。你呢？", hint: "用 'Not much' 回應 'what's up'" },
+      { speaker: 'ghost', en: "Same here. Good to see you!", zh: "我也是。看到你真好！" },
+      { speaker: 'user',  en: "Good to see you too! It's been a while.", zh: "我也是！好一陣子沒見了。", hint: "回應 'good to see you' + 補一句" },
+      { speaker: 'ghost', en: "How's everything going?", zh: "一切都還好嗎？" },
+      { speaker: 'user',  en: "Pretty good, thanks for asking!", zh: "還不錯，謝謝你問！", hint: "正面回答 + 禮貌補一句" },
+    ]
+  },
+  {
+    id: 2, emoji: '☕',
+    title: 'Ordering Coffee',
+    desc: '在咖啡店點一杯飲料',
+    phrases: [
+      { en: "Can I get a medium latte, please?", zh: "可以幫我來一杯中杯拿鐵嗎？", tip: "'Can I get' 比 'I want' 自然太多，記起來。" },
+      { en: "For here or to go?", zh: "內用還是外帶？", tip: "店員會問你這句，'to go' = 外帶。" },
+      { en: "Could I get oat milk instead?", zh: "可以換燕麥奶嗎？", tip: "'instead' 表示替換，聽起來很客氣。" },
+      { en: "That'll be all, thanks.", zh: "這樣就好，謝謝。", tip: "結束點餐時用，比 'I'm done' 更得體。" },
+      { en: "Keep the change.", zh: "不用找了。", tip: "現金付款給小費時用。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hi! What can I get started for you?", zh: "嗨！要幫你準備點什麼？" },
+      { speaker: 'user',  en: "Can I get a medium latte, please?", zh: "可以幫我來一杯中杯拿鐵嗎？", hint: "用 'Can I get' 開頭點餐" },
+      { speaker: 'ghost', en: "Sure thing. For here or to go?", zh: "沒問題。內用還是外帶？" },
+      { speaker: 'user',  en: "To go, please.", zh: "外帶，謝謝。", hint: "短回答即可" },
+      { speaker: 'ghost', en: "Anything else?", zh: "還要其他的嗎？" },
+      { speaker: 'user',  en: "That'll be all, thanks.", zh: "這樣就好，謝謝。", hint: "用 'That'll be all' 結束" },
+    ]
+  },
+  {
+    id: 3, emoji: '🍔',
+    title: 'At a Restaurant',
+    desc: '在餐廳點餐、要帳單',
+    phrases: [
+      { en: "Could we have a table for two?", zh: "我們要兩個人的位子。", tip: "進餐廳第一句，'for two' 是兩個人。" },
+      { en: "What do you recommend?", zh: "你推薦什麼？", tip: "問服務生招牌菜的萬用句。" },
+      { en: "I'll have the cheeseburger, please.", zh: "我要起司漢堡。", tip: "'I'll have' 是點餐最自然的講法。" },
+      { en: "Can I get this to go?", zh: "這個可以打包嗎？", tip: "想把吃不完的帶走時用。" },
+      { en: "Could we get the check, please?", zh: "可以給我們帳單嗎？", tip: "美國叫 check，英國叫 bill。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hi there! How many?", zh: "嗨！幾位？" },
+      { speaker: 'user',  en: "Could we have a table for two?", zh: "我們要兩個人的位子。", hint: "用 'a table for two'" },
+      { speaker: 'ghost', en: "Right this way. Here are your menus.", zh: "請跟我來。這是你們的菜單。" },
+      { speaker: 'user',  en: "Thanks. What do you recommend?", zh: "謝謝。你推薦什麼？", hint: "問推薦菜" },
+      { speaker: 'ghost', en: "Our cheeseburger is really popular.", zh: "我們的起司漢堡很受歡迎。" },
+      { speaker: 'user',  en: "Sounds good. I'll have the cheeseburger, please.", zh: "聽起來不錯，我要起司漢堡。", hint: "'Sounds good' + 點餐" },
+    ]
+  },
+  {
+    id: 4, emoji: '🛍️',
+    title: 'Shopping',
+    desc: '逛街、試穿、結帳',
+    phrases: [
+      { en: "I'm just looking, thanks.", zh: "我先看看，謝謝。", tip: "店員問 'Can I help you?' 時的禮貌回答。" },
+      { en: "Do you have this in a medium?", zh: "這個有 M 號嗎？", tip: "問尺寸最直接的句型。" },
+      { en: "Where are the fitting rooms?", zh: "試衣間在哪？", tip: "美國叫 fitting room，不是 changing room。" },
+      { en: "I'll take it.", zh: "我要這個。", tip: "決定買了就一句搞定。" },
+      { en: "Do you take cards?", zh: "可以刷卡嗎？", tip: "在美國幾乎都可以，但小店問一下保險。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hi! Can I help you find anything?", zh: "嗨！要幫你找什麼嗎？" },
+      { speaker: 'user',  en: "I'm just looking, thanks.", zh: "我先看看，謝謝。", hint: "禮貌的婉拒" },
+      { speaker: 'ghost', en: "Sure, let me know if you need anything.", zh: "好的，需要的話跟我說。" },
+      { speaker: 'user',  en: "Actually, do you have this in a medium?", zh: "其實，這個有 M 號嗎？", hint: "改變主意，問尺寸" },
+      { speaker: 'ghost', en: "Let me check. Yes, here you go.", zh: "我看看。有，給你。" },
+      { speaker: 'user',  en: "Thanks. Where are the fitting rooms?", zh: "謝謝，試衣間在哪？", hint: "問試衣間位置" },
+    ]
+  },
+  {
+    id: 5, emoji: '🚕',
+    title: 'Getting Around',
+    desc: '搭車、問路、Uber',
+    phrases: [
+      { en: "Excuse me, how do I get to the subway?", zh: "請問地鐵站怎麼走？", tip: "'Excuse me' 開頭問路，禮貌又標準。" },
+      { en: "Is it within walking distance?", zh: "走路會到嗎？", tip: "問距離超實用。" },
+      { en: "Could you drop me off at the corner?", zh: "可以在轉角讓我下車嗎？", tip: "搭 Uber 或計程車跟司機講。" },
+      { en: "I think I'm lost.", zh: "我好像迷路了。", tip: "找人幫忙時這句很自然。" },
+      { en: "Thanks so much for your help!", zh: "非常感謝你的幫忙！", tip: "別人幫了你之後一定要說。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "You look a little lost — need help?", zh: "你看起來有點迷路，需要幫忙嗎？" },
+      { speaker: 'user',  en: "Yeah, I think I'm lost. How do I get to the subway?", zh: "對，我好像迷路了。地鐵站怎麼走？", hint: "承認迷路 + 問方向" },
+      { speaker: 'ghost', en: "Just two blocks down, on your right.", zh: "往前兩個街區，在你右手邊。" },
+      { speaker: 'user',  en: "Is it within walking distance?", zh: "走路會到嗎？", hint: "確認可以走過去" },
+      { speaker: 'ghost', en: "Totally, like five minutes.", zh: "完全可以，大概五分鐘。" },
+      { speaker: 'user',  en: "Thanks so much for your help!", zh: "非常感謝你的幫忙！", hint: "誠懇道謝" },
+    ]
+  },
+  {
+    id: 6, emoji: '🎉',
+    title: 'Small Talk at a Party',
+    desc: '派對上跟陌生人聊天',
+    phrases: [
+      { en: "Hey, I don't think we've met. I'm Sam.", zh: "嘿，我們應該還沒見過，我是 Sam。", tip: "派對自我介紹的標準開場。" },
+      { en: "How do you know the host?", zh: "你怎麼認識主人的？", tip: "派對 small talk 萬用題。" },
+      { en: "What do you do?", zh: "你是做什麼的？", tip: "問職業最普通的講法。" },
+      { en: "Oh nice, that sounds interesting!", zh: "喔不錯，聽起來蠻有趣的！", tip: "對方講完工作後的標準反應。" },
+      { en: "It was great chatting with you!", zh: "跟你聊得很愉快！", tip: "想結束對話時這句最得體。" },
+    ],
+    dialog: [
+      { speaker: 'ghost', en: "Hey, I don't think we've met. I'm Alex.", zh: "嘿，我們應該還沒見過，我是 Alex。" },
+      { speaker: 'user',  en: "Hi Alex, I'm [your name]. Nice to meet you!", zh: "嗨 Alex，我是 [你的名字]，很高興認識你！", hint: "回名字 + 'Nice to meet you'" },
+      { speaker: 'ghost', en: "So how do you know the host?", zh: "你怎麼認識主人的？" },
+      { speaker: 'user',  en: "We work together. How about you?", zh: "我們同事。你呢？", hint: "簡單回答 + 反問" },
+      { speaker: 'ghost', en: "We went to college together. What do you do?", zh: "我們大學同學。你是做什麼的？" },
+      { speaker: 'user',  en: "I'm a designer. It was great chatting with you!", zh: "我是設計師。跟你聊得很愉快！", hint: "答工作 + 收尾" },
+    ]
+  },
+];
+
+const HOME_GREETINGS = [
+  { en: "Hi! Ready to chat today?", zh: "嗨！今天要不要來聊聊天呀？" },
+  { en: "Welcome back! Let's practice.", zh: "歡迎回來！我們來練習吧～" },
+  { en: "Boo! Want to learn something new?", zh: "嚇你一跳！想學新東西嗎？" },
+  { en: "Hey friend! Got a minute?", zh: "嘿朋友！有空嗎？" },
+  { en: "Your English is getting better!", zh: "你的英文越來越好啦！" },
+];
+
+/* =========================================================
+   狀態
+   ========================================================= */
+const STORE_KEY = 'boo-talk-state-v1';
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return Object.assign(defaultState(), JSON.parse(raw));
+  } catch (e) {}
+  return defaultState();
+}
+function defaultState() {
+  return {
+    currentLevel: 1,
+    completed: [],
+    streak: 0,
+    lastDate: null,
+    daily: { phrasesLearned: false, talkedWithGhost: false, completedLevel: false },
+  };
+}
+function saveState() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+// 連續天數
+(function updateStreak() {
+  const today = new Date().toDateString();
+  if (state.lastDate !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastDate === yesterday) state.streak += 1;
+    else if (state.lastDate === null) state.streak = 1;
+    else state.streak = 1;
+    state.lastDate = today;
+    state.daily = { phrasesLearned: false, talkedWithGhost: false, completedLevel: false };
+    saveState();
+  }
+})();
+
+/* =========================================================
+   畫面切換
+   ========================================================= */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'map-screen') renderMap();
+  if (id === 'home') renderHome();
+}
+
+/* =========================================================
+   首頁
+   ========================================================= */
+function renderHome() {
+  document.getElementById('streak').textContent = state.streak;
+  // 隨機問候 (跟天數對應，當天固定)
+  const greetIdx = (new Date().getDate() + state.streak) % HOME_GREETINGS.length;
+  const g = HOME_GREETINGS[greetIdx];
+  document.getElementById('speech-en').textContent = g.en;
+  document.getElementById('speech-zh').textContent = g.zh;
+
+  // 地圖按鈕的副標
+  const cur = LEVELS.find(l => l.id === state.currentLevel) || LEVELS[0];
+  document.getElementById('map-sub').textContent = `第 ${cur.id} 關 · ${cur.desc}`;
+
+  // 每日任務
+  const tasks = [
+    { key: 'phrasesLearned', label: '學完一關的句子' },
+    { key: 'talkedWithGhost', label: '跟小幽靈練習一次' },
+    { key: 'completedLevel', label: '完成一個關卡' },
+  ];
+  let doneCount = 0;
+  const list = document.getElementById('daily-tasks-list');
+  list.innerHTML = '';
+  tasks.forEach(t => {
+    const done = state.daily[t.key];
+    if (done) doneCount++;
+    const div = document.createElement('div');
+    div.className = 'daily-task' + (done ? ' done' : '');
+    div.innerHTML = `<div class="check">${done ? '✓' : ''}</div><div class="label">${t.label}</div>`;
+    list.appendChild(div);
+  });
+  document.getElementById('daily-done').textContent = doneCount;
+  document.getElementById('daily-fill').style.width = (doneCount / 3 * 100) + '%';
+
+  // 時段問候
+  const hour = new Date().getHours();
+  let g2;
+  if (hour < 5) g2 = 'Late night vibes...';
+  else if (hour < 12) g2 = 'Good morning!';
+  else if (hour < 18) g2 = 'Good afternoon!';
+  else g2 = 'Good evening!';
+  document.getElementById('greeting').textContent = g2;
+}
+
+function onGhostTap() {
+  // 點小幽靈換句問候
+  const idx = Math.floor(Math.random() * HOME_GREETINGS.length);
+  const g = HOME_GREETINGS[idx];
+  document.getElementById('speech-en').textContent = g.en;
+  document.getElementById('speech-zh').textContent = g.zh;
+
+  // 抖動
+  const ghost = document.getElementById('home-ghost');
+  ghost.style.animation = 'none';
+  setTimeout(() => { ghost.style.animation = ''; }, 10);
+}
+
+function goPracticeFromHome() {
+  // 從首頁直接進當前關卡的對話
+  const cur = LEVELS.find(l => l.id === state.currentLevel) || LEVELS[0];
+  currentLevelData = cur;
+  showScreen('lesson');
+  renderLesson(cur);
+}
+
+/* =========================================================
+   地圖頁
+   ========================================================= */
+function renderMap() {
+  document.getElementById('map-current').textContent = state.currentLevel;
+  document.getElementById('map-total').textContent = LEVELS.length;
+
+  const path = document.getElementById('map-path');
+  path.innerHTML = '';
+  LEVELS.forEach(level => {
+    const node = document.createElement('div');
+    node.className = 'level-node';
+    let cls = 'locked';
+    if (state.completed.includes(level.id)) cls = 'completed';
+    else if (level.id === state.currentLevel) cls = 'current';
+    else if (level.id < state.currentLevel) cls = 'unlocked';
+
+    const inner = document.createElement('div');
+    inner.className = 'level-circle ' + cls;
+    inner.innerHTML = `
+      <div class="level-emoji">${cls === 'completed' ? '✓' : level.emoji}</div>
+      <div class="level-num">LV ${level.id}</div>
+      <div class="level-label">${level.title}</div>
+    `;
+    if (cls !== 'locked') {
+      inner.onclick = () => {
+        currentLevelData = level;
+        showScreen('lesson');
+        renderLesson(level);
+      };
+    } else {
+      inner.onclick = () => {
+        inner.style.transform = 'translateX(-4px)';
+        setTimeout(() => inner.style.transform = 'translateX(4px)', 80);
+        setTimeout(() => inner.style.transform = '', 160);
+      };
+    }
+    node.appendChild(inner);
+    path.appendChild(node);
+  });
+}
+
+/* =========================================================
+   學習頁
+   ========================================================= */
+let currentLevelData = null;
+
+function renderLesson(level) {
+  document.getElementById('lesson-top-title').textContent = `Level ${level.id}`;
+  document.getElementById('lesson-emoji').textContent = level.emoji;
+  document.getElementById('lesson-title').textContent = level.title;
+  document.getElementById('lesson-desc').textContent = level.desc;
+
+  const list = document.getElementById('phrases-list');
+  list.innerHTML = '';
+  level.phrases.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'phrase-card';
+    card.style.animationDelay = (i * 80) + 'ms';
+    card.style.animation = 'fadeUp 0.4s both';
+    card.innerHTML = `
+      <div class="num-tag">${i + 1}</div>
+      <div class="en">${p.en}</div>
+      <div class="zh">${p.zh}</div>
+      <div class="tip">💡 ${p.tip}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  // 標記每日任務：學完句子
+  state.daily.phrasesLearned = true;
+  saveState();
+}
+
+/* =========================================================
+   練習頁 — 對話流程 + 錄音
+   ========================================================= */
+let dialogIndex = 0;
+let userIsGhost = false; // 預設小幽靈先講；true 表示用戶扮演幽靈
+let mediaRecorder = null;
+let audioChunks = [];
+let recordings = {}; // index -> Blob URL
+let isRecording = false;
+
+function startPractice() {
+  showScreen('practice');
+  document.getElementById('practice-title').textContent = currentLevelData.title;
+  dialogIndex = 0;
+  userIsGhost = false;
+  recordings = {};
+  document.getElementById('next-bar').classList.remove('show');
+  document.getElementById('record-bar').style.display = 'flex';
+  updateRolePill();
+  document.getElementById('dialog-area').innerHTML = '';
+  advanceDialog();
+}
+
+function restartPractice() {
+  startPractice();
+}
+
+function exitPractice() {
+  if (mediaRecorder && isRecording) stopRecording();
+  showScreen('map-screen');
+}
+
+function updateRolePill() {
+  const userTurn = isUserTurn();
+  if (userIsGhost) {
+    document.getElementById('role-icon').textContent = '🧑';
+    document.getElementById('role-text').textContent = '你扮演小幽靈';
+  } else {
+    document.getElementById('role-icon').textContent = '👻';
+    document.getElementById('role-text').textContent = '小幽靈先講';
+  }
+}
+
+function isUserTurn() {
+  if (dialogIndex >= currentLevelData.dialog.length) return false;
+  const turn = currentLevelData.dialog[dialogIndex];
+  // 預設：speaker === 'user' 就是用戶輪
+  // 交換後：speaker === 'ghost' 是用戶輪
+  if (userIsGhost) return turn.speaker === 'ghost';
+  return turn.speaker === 'user';
+}
+
+function swapRoles() {
+  // 在當前進度交換 — 重新走目前這一句
+  userIsGhost = !userIsGhost;
+  updateRolePill();
+  // 加一個提示泡泡
+  const area = document.getElementById('dialog-area');
+  const note = document.createElement('div');
+  note.style.cssText = 'text-align:center;font-family:Caveat,cursive;font-size:18px;color:var(--ink-soft);padding:8px;';
+  note.textContent = userIsGhost ? '🔄 換你扮演小幽靈囉！' : '🔄 換回小幽靈先講';
+  area.appendChild(note);
+  // 重新渲染當前輪 (因為角色換了，按鈕狀態要更新)
+  renderCurrentTurn();
+}
+
+function advanceDialog() {
+  if (dialogIndex >= currentLevelData.dialog.length) {
+    // 對話結束
+    document.getElementById('record-bar').style.display = 'none';
+    document.getElementById('next-bar').classList.add('show');
+    state.daily.talkedWithGhost = true;
+    saveState();
+    return;
+  }
+  renderCurrentTurn();
+}
+
+function renderCurrentTurn() {
+  const turn = currentLevelData.dialog[dialogIndex];
+  const userTurn = isUserTurn();
+  const area = document.getElementById('dialog-area');
+
+  if (userTurn) {
+    // 換用戶開口 — 顯示提示卡
+    const card = document.createElement('div');
+    card.className = 'your-turn-card';
+    card.id = 'turn-card-' + dialogIndex;
+    card.innerHTML = `
+      <div class="label">${userIsGhost ? '👻 換你當小幽靈說' : '🎙️ 換你說'}</div>
+      <div class="prompt">${turn.en}</div>
+      <div class="hint">${turn.zh}${turn.hint ? ' · 提示：' + turn.hint : ''}</div>
+    `;
+    area.appendChild(card);
+    setStatus('照著上面的句子唸，按🎙️開始錄音');
+    document.getElementById('rec-btn').classList.remove('recording');
+    document.getElementById('play-btn').disabled = true;
+    document.getElementById('next-btn').disabled = true;
+  } else {
+    // 對方輪 — 直接顯示泡泡
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + (turn.speaker === 'ghost' ? 'ghost' : 'user');
+    bubble.innerHTML = `
+      <div class="speaker">${turn.speaker === 'ghost' ? '👻 Ghost' : '🧑 You'}</div>
+      <div class="en">${turn.en}</div>
+      <div class="zh">${turn.zh}</div>
+    `;
+    area.appendChild(bubble);
+    setStatus('小幽靈說完了，準備換你...');
+    // 短暫延遲後進到下一輪
+    setTimeout(() => {
+      dialogIndex++;
+      area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      advanceDialog();
+    }, 1400);
+  }
+  setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
+}
+
+function setStatus(text, live = false) {
+  const s = document.getElementById('record-status');
+  s.textContent = text;
+  s.classList.toggle('live', live);
+}
+
+/* ========== 錄音 ========== */
+async function toggleRecord() {
+  if (!isRecording) await startRecording();
+  else stopRecording();
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      recordings[dialogIndex] = url;
+      stream.getTracks().forEach(t => t.stop());
+      document.getElementById('play-btn').disabled = false;
+      document.getElementById('next-btn').disabled = false;
+      setStatus('錄好了！按▶試聽，按✓進到下一句');
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('rec-btn').classList.add('recording');
+    setStatus('🔴 錄音中... 唸完再按一次停止', true);
+  } catch (err) {
+    setStatus('⚠️ 無法使用麥克風，請在設定允許');
+    console.error(err);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('rec-btn').classList.remove('recording');
+  }
+}
+
+function playRecording() {
+  const url = recordings[dialogIndex];
+  if (!url) return;
+  const audio = new Audio(url);
+  audio.play();
+  setStatus('🔊 播放錄音中...');
+  audio.onended = () => setStatus('滿意就按✓ 不滿意可以重錄');
+}
+
+function confirmTurn() {
+  // 把這一輪轉成正式氣泡顯示在對話流
+  const card = document.getElementById('turn-card-' + dialogIndex);
+  const turn = currentLevelData.dialog[dialogIndex];
+  const url = recordings[dialogIndex];
+
+  if (card) {
+    const bubble = document.createElement('div');
+    const isGhostBubble = userIsGhost; // 如果用戶扮演幽靈，這句就放幽靈側
+    bubble.className = 'bubble ' + (isGhostBubble ? 'ghost' : 'user');
+    bubble.innerHTML = `
+      <div class="speaker">${isGhostBubble ? '👻 You as Ghost' : '🧑 You'}</div>
+      <div class="en">${turn.en}</div>
+      <div class="zh">${turn.zh}</div>
+      ${url ? `<div class="bubble-actions"><button class="bubble-action" onclick="playSavedRecording('${url}')">▶ 重聽</button></div>` : ''}
+    `;
+    card.replaceWith(bubble);
+  }
+
+  dialogIndex++;
+  advanceDialog();
+}
+
+function playSavedRecording(url) {
+  new Audio(url).play();
+}
+
+/* ========== 完成 ========== */
+function finishLesson() {
+  // 釋放錄音 URL
+  Object.values(recordings).forEach(u => URL.revokeObjectURL(u));
+  recordings = {};
+
+  // 標記完成
+  if (!state.completed.includes(currentLevelData.id)) {
+    state.completed.push(currentLevelData.id);
+  }
+  if (state.currentLevel === currentLevelData.id && currentLevelData.id < LEVELS.length) {
+    state.currentLevel = currentLevelData.id + 1;
+  }
+  state.daily.completedLevel = true;
+  saveState();
+
+  // 完成頁
+  document.getElementById('done-sub').textContent = `你完成了第 ${currentLevelData.id} 關 · ${currentLevelData.title}！`;
+  const nextBtn = document.getElementById('next-level-btn');
+  if (currentLevelData.id < LEVELS.length) {
+    const nextLevel = LEVELS[currentLevelData.id]; // id 1-indexed, array 0-indexed
+    nextBtn.textContent = `下一關：${nextLevel.title} →`;
+    nextBtn.style.display = '';
+  } else {
+    nextBtn.textContent = '🎊 全部完成了！';
+    nextBtn.onclick = () => showScreen('home');
+  }
+  showScreen('done');
+}
+
+function goNextLevel() {
+  if (currentLevelData.id >= LEVELS.length) {
+    showScreen('home');
+    return;
+  }
+  const nextLevel = LEVELS[currentLevelData.id];
+  currentLevelData = nextLevel;
+  showScreen('lesson');
+  renderLesson(nextLevel);
+}
+
+/* =========================================================
+   PWA 安裝
+   ========================================================= */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // 第二次進來才顯示
+  if (state.streak >= 1 && !sessionStorage.getItem('install-shown')) {
+    setTimeout(() => {
+      document.getElementById('install-toast').classList.add('show');
+      sessionStorage.setItem('install-shown', '1');
+    }, 4000);
+  }
+});
+
+async function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('install-toast').classList.remove('show');
+}
+
+// 註冊 service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+/* =========================================================
+   啟動
+   ========================================================= */
+renderHome();
+</script>
+</body>
+</html>
