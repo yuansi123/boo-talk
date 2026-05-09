@@ -704,15 +704,17 @@ html, body {
 .practice-ghost-stage {
   position: relative;
   margin: 18px 22px 8px;
-  padding: 14px 18px 18px;
+  padding: 30px 18px 26px;
   background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,229,160,0.35));
   border: 2.5px solid var(--ink);
   border-radius: 28px;
   box-shadow: var(--shadow-deep);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  overflow: hidden;
+  justify-content: flex-end;
+  overflow: visible;
+  min-height: 360px;
 }
 .practice-ghost-stage::before {
   content: '';
@@ -722,21 +724,145 @@ html, body {
     radial-gradient(circle at 20% 30%, rgba(255, 230, 200, 0.6), transparent 40%),
     radial-gradient(circle at 80% 60%, rgba(212, 197, 249, 0.5), transparent 40%);
   pointer-events: none;
+  border-radius: 28px;
 }
 
+/* 頭上的對話泡泡 */
+.thought-bubble {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 320px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+  border-radius: 22px;
+  padding: 14px 18px 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-deep);
+  text-align: center;
+  transition: opacity 0.3s, transform 0.3s;
+}
+/* 指向小幽靈的尾巴 */
+.thought-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 16px solid var(--ink);
+}
+.thought-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 13px solid var(--paper);
+}
+
+/* 用戶輪 — 黃色泡泡帶虛線 */
+.thought-bubble.user-turn {
+  background: var(--butter);
+  border-style: dashed;
+}
+.thought-bubble.user-turn::after { border-top-color: var(--butter); }
+
+/* 進泡動畫 */
+.thought-bubble.pop {
+  animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes bubblePop {
+  0% { opacity: 0; transform: scale(0.7) translateY(10px); }
+  60% { transform: scale(1.05) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.bubble-speaker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.bubble-en {
+  font-family: 'Fraunces', serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.bubble-zh {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.bubble-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--peach);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.thought-bubble.user-turn .bubble-hint {
+  background: rgba(255,255,255,0.6);
+}
+.bubble-replay {
+  margin-top: 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+.thought-bubble.user-turn .bubble-replay {
+  background: var(--paper);
+}
+
+/* 小幽靈本體 */
 .practice-ghost {
   position: relative;
-  width: 100px;
-  height: 110px;
-  flex-shrink: 0;
+  width: 140px;
+  height: 155px;
   z-index: 1;
   animation: ghostIdle 3.2s ease-in-out infinite;
   transform-origin: 50% 80%;
+  display: block;
 }
 .practice-ghost svg {
+  display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
   filter: drop-shadow(0 6px 12px rgba(255, 139, 106, 0.25));
+}
+
+/* 進度標 (在 practice-header 中央) */
+.turn-progress {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  box-shadow: var(--shadow-soft);
 }
 
 /* 浮動動畫 */
@@ -790,69 +916,6 @@ html, body {
 @keyframes blink {
   0%, 90%, 100% { transform: scaleY(1); }
   95% { transform: scaleY(0.1); }
-}
-
-/* 即時對話泡泡 — 漫畫風格指向小幽靈 */
-.ghost-live-bubble {
-  position: relative;
-  flex: 1;
-  background: var(--paper);
-  border: 2.5px solid var(--ink);
-  border-radius: 20px;
-  padding: 12px 16px;
-  min-height: 60px;
-  z-index: 1;
-  box-shadow: var(--shadow-soft);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  transition: opacity 0.3s, transform 0.3s;
-}
-.ghost-live-bubble::before {
-  content: '';
-  position: absolute;
-  left: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-right: 14px solid var(--ink);
-}
-.ghost-live-bubble::after {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 12px solid var(--paper);
-}
-.ghost-live-bubble.silent {
-  opacity: 0.5;
-}
-.ghost-live-bubble.active {
-  animation: bubbleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes bubbleIn {
-  from { opacity: 0; transform: scale(0.85); }
-  to { opacity: 1; transform: scale(1); }
-}
-.live-en {
-  font-family: 'Fraunces', serif;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.35;
-  margin-bottom: 3px;
-}
-.live-zh {
-  font-size: 12px;
-  color: var(--ink-soft);
-  font-weight: 600;
 }
 
 .dialog-area {
@@ -1282,11 +1345,21 @@ html, body {
         <span id="role-icon">👻</span>
         <span id="role-text">小幽靈先講</span>
       </div>
+      <div class="turn-progress" id="turn-progress">1 / 6</div>
       <button class="swap-btn" onclick="swapRoles()">⇄ 交換</button>
     </div>
 
-    <!-- 會動的小幽靈舞台 -->
+    <!-- 小幽靈舞台 — 中央固定，頭上對話泡泡 -->
     <div class="practice-ghost-stage">
+      <!-- 頭上的對話泡泡 -->
+      <div class="thought-bubble" id="thought-bubble">
+        <div class="bubble-speaker" id="bubble-speaker">👻 Ghost</div>
+        <div class="bubble-en" id="bubble-en">Let's start!</div>
+        <div class="bubble-zh" id="bubble-zh">我們開始吧～</div>
+        <div class="bubble-hint" id="bubble-hint" style="display:none;"></div>
+        <button class="bubble-replay" id="bubble-replay" data-speak="Let's start!">🔊</button>
+      </div>
+
       <div class="practice-ghost" id="practice-ghost" data-mood="idle">
         <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -1298,31 +1371,24 @@ html, body {
           <!-- 身體 -->
           <path d="M100 20 C50 20 30 60 30 100 L30 195 C30 200 35 202 38 198 L52 182 C55 178 60 178 63 182 L77 198 C80 202 85 202 88 198 L102 182 C105 178 110 178 113 182 L127 198 C130 202 135 202 138 198 L152 182 C155 178 160 178 163 182 L172 192 C175 196 180 194 180 188 L180 100 C180 60 150 20 100 20 Z"
                 fill="url(#bodyGradP)" stroke="#3D2E26" stroke-width="3.5" stroke-linejoin="round" class="ghost-body"/>
-          <!-- 腮紅 -->
           <ellipse cx="58" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65" class="ghost-cheek-l"/>
           <ellipse cx="142" cy="118" rx="14" ry="9" fill="#FFB6A8" opacity="0.65" class="ghost-cheek-r"/>
-          <!-- 眼睛 -->
           <g class="ghost-eyes">
             <ellipse cx="78" cy="95" rx="7" ry="9" fill="#3D2E26" class="eye-l"/>
             <ellipse cx="122" cy="95" rx="7" ry="9" fill="#3D2E26" class="eye-r"/>
             <ellipse cx="80" cy="92" rx="2.5" ry="3" fill="#fff"/>
             <ellipse cx="124" cy="92" rx="2.5" ry="3" fill="#fff"/>
           </g>
-          <!-- 嘴巴 (會變形) -->
           <g class="ghost-mouth">
             <path class="mouth-smile" d="M88 115 Q100 125 112 115" stroke="#3D2E26" stroke-width="3" fill="none" stroke-linecap="round"/>
             <ellipse class="mouth-talk" cx="100" cy="118" rx="6" ry="4" fill="#3D2E26" opacity="0"/>
           </g>
         </svg>
       </div>
-      <!-- 小幽靈即時對話泡泡 -->
-      <div class="ghost-live-bubble" id="ghost-live-bubble">
-        <div class="live-en" id="live-en">Ready when you are!</div>
-        <div class="live-zh" id="live-zh">準備好就開始吧！</div>
-      </div>
     </div>
 
-    <div class="dialog-area" id="dialog-area"></div>
+    <!-- 隱藏舊 dialog-area，但保留節點不破壞舊邏輯 -->
+    <div class="dialog-area" id="dialog-area" style="display:none;"></div>
 
     <div class="record-bar" id="record-bar">
       <div class="record-status" id="record-status">點擊麥克風開始錄音</div>
@@ -1912,7 +1978,7 @@ function onGhostTap() {
     if (englishVoice) u.voice = englishVoice;
     u.lang = 'en-US';
     u.rate = 0.95;
-    u.pitch = 1.1;
+    u.pitch = 1.4;  // 更輕快
     window.speechSynthesis.speak(u);
   }
 }
@@ -2038,19 +2104,31 @@ let englishVoice = null;
 function loadVoices() {
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return false;
-  // 優先挑美式英文女聲
-  const preferred = [
-    v => v.lang === 'en-US' && /female|samantha|victoria|karen|moira|tessa|ava|allison/i.test(v.name),
+
+  // 已知男聲名字 (要排除)
+  const maleNames = /daniel|alex|fred|tom|ralph|aaron|albert|arthur|google.*us.*english$|google.*uk.*english$/i;
+  // 已知好聽的女聲名字 (Google/Apple/Microsoft 的女聲)
+  const niceFemale = /samantha|karen|moira|tessa|ava|allison|joanna|salli|kimberly|kendra|nicole|amy|emma|ivy|kathy|aria|jenny|natasha|libby|sonia|google.*female|microsoft.*aria|microsoft.*jenny|microsoft.*zira|female/i;
+
+  // 優先序：明確女聲 > en-US 非男聲 > en-US > en-* 非男聲 > 任何 en
+  const tiers = [
+    v => /^en/i.test(v.lang) && niceFemale.test(v.name),
+    v => v.lang === 'en-US' && niceFemale.test(v.name),
+    v => v.lang === 'en-US' && !maleNames.test(v.name),
     v => v.lang === 'en-US',
-    v => v.lang.startsWith('en-'),
-    v => v.default,
+    v => /^en-(GB|AU|NZ|CA)/i.test(v.lang) && !maleNames.test(v.name),
+    v => v.lang.startsWith('en'),
   ];
-  for (const test of preferred) {
+  for (const test of tiers) {
     const found = voices.find(test);
     if (found) { englishVoice = found; break; }
   }
-  if (!englishVoice && voices.length) englishVoice = voices[0];
+  if (!englishVoice && voices.length) {
+    // 最後備案：找任何含 en 的、沒明顯是男聲的
+    englishVoice = voices.find(v => v.lang.startsWith('en') && !maleNames.test(v.name)) || voices[0];
+  }
   voicesReady = true;
+  console.log('TTS voice:', englishVoice && englishVoice.name, englishVoice && englishVoice.lang);
   return true;
 }
 
@@ -2062,20 +2140,19 @@ if ('speechSynthesis' in window) {
 function speak(text, opts = {}) {
   return new Promise(resolve => {
     if (!('speechSynthesis' in window)) { resolve(); return; }
-    // 取消之前的朗讀
     window.speechSynthesis.cancel();
     if (!voicesReady) loadVoices();
     const u = new SpeechSynthesisUtterance(text);
     if (englishVoice) u.voice = englishVoice;
     u.lang = 'en-US';
-    u.rate = opts.rate || 0.92; // 稍慢方便學習
-    u.pitch = opts.pitch || 1.05;
+    u.rate = opts.rate || 0.95;       // 稍慢方便學習
+    u.pitch = opts.pitch || 1.35;     // 提高音調 (預設 1) — 更輕快可愛
     u.volume = 1;
     u.onend = resolve;
     u.onerror = resolve;
     window.speechSynthesis.speak(u);
-    // 防呆：5 秒沒結束就強制 resolve
-    setTimeout(resolve, 5000);
+    // 防呆：8 秒沒結束就強制 resolve
+    setTimeout(resolve, 8000);
   });
 }
 
@@ -2095,7 +2172,7 @@ function startPractice() {
   document.getElementById('dialog-area').innerHTML = '';
   // 初始化小幽靈
   setGhostMood('idle');
-  setLiveBubble("Let's start! Listen to me first 💫", "我們開始吧！先聽我說～", true);
+  updateTurnProgress();
   // 解鎖 iOS 的語音 (要在用戶手勢內呼叫一次空的)
   if ('speechSynthesis' in window) {
     const dummy = new SpeechSynthesisUtterance('');
@@ -2150,7 +2227,14 @@ function advanceDialog() {
     state.daily.talkedWithGhost = true;
     saveState();
     setGhostMood('happy');
-    setLiveBubble("Awesome job! 🎉", "你太棒了！", true);
+    setBubble({
+      speaker: '👻 Ghost',
+      en: 'Awesome job! 🎉',
+      zh: '你超棒！這關完成了～',
+      hint: '',
+      isUserTurn: false,
+    });
+    updateTurnProgress();
     return;
   }
   renderCurrentTurn();
@@ -2161,81 +2245,90 @@ function setGhostMood(mood) {
   if (g) g.setAttribute('data-mood', mood);
 }
 
-function setLiveBubble(en, zh, animate = true) {
-  const bubble = document.getElementById('ghost-live-bubble');
-  const enEl = document.getElementById('live-en');
-  const zhEl = document.getElementById('live-zh');
-  if (!bubble || !enEl || !zhEl) return;
-  enEl.textContent = en;
-  zhEl.textContent = zh;
-  bubble.classList.remove('silent');
-  if (animate) {
-    bubble.classList.remove('active');
-    void bubble.offsetWidth; // 強制重排觸發動畫
-    bubble.classList.add('active');
+// no-op：保留函數簽名讓舊呼叫不會壞，但不顯示任何東西
+function setGhostStatus(text) {}
+
+// 更新小幽靈頭上的對話泡泡 (替代舊的對話流堆積)
+function setBubble(opts) {
+  const { speaker, en, zh, hint, isUserTurn } = opts;
+  const bubble = document.getElementById('thought-bubble');
+  if (!bubble) return;
+
+  document.getElementById('bubble-speaker').textContent = speaker;
+  document.getElementById('bubble-en').textContent = en;
+  document.getElementById('bubble-zh').textContent = zh;
+
+  const hintEl = document.getElementById('bubble-hint');
+  if (hint) {
+    hintEl.textContent = '💡 ' + hint;
+    hintEl.style.display = 'block';
+  } else {
+    hintEl.style.display = 'none';
   }
+
+  const replayBtn = document.getElementById('bubble-replay');
+  if (en) {
+    replayBtn.setAttribute('data-speak', en);
+    replayBtn.style.display = '';
+  } else {
+    replayBtn.style.display = 'none';
+  }
+
+  bubble.classList.toggle('user-turn', !!isUserTurn);
+
+  // 觸發進泡動畫
+  bubble.classList.remove('pop');
+  void bubble.offsetWidth;
+  bubble.classList.add('pop');
+}
+
+function updateTurnProgress() {
+  const el = document.getElementById('turn-progress');
+  if (!el) return;
+  const total = currentLevelData.dialog.length;
+  const cur = Math.min(dialogIndex + 1, total);
+  el.textContent = `${cur} / ${total}`;
 }
 
 async function renderCurrentTurn() {
   const turn = currentLevelData.dialog[dialogIndex];
   const userTurn = isUserTurn();
-  const area = document.getElementById('dialog-area');
+  updateTurnProgress();
 
   if (userTurn) {
-    // 小幽靈進入「聆聽」狀態
+    // 小幽靈聆聽，頭上泡泡顯示「換你說」+ 句子提示
     setGhostMood('listening');
-    setLiveBubble(
-      userIsGhost ? '👀 我在聽你扮演我...' : '👀 換你說囉，我聽你的~',
-      userIsGhost ? '對著我講你要表達的句子' : '照著下面的句子說',
-      true
-    );
-
-    // 換用戶開口 — 顯示提示卡
-    const card = document.createElement('div');
-    card.className = 'your-turn-card';
-    card.id = 'turn-card-' + dialogIndex;
-    card.innerHTML = `
-      <div class="label">${userIsGhost ? '👻 換你當小幽靈說' : '🎙️ 換你說'}</div>
-      <div class="prompt">${escapeHtml(turn.en)}</div>
-      <div class="hint">${escapeHtml(turn.zh)}${turn.hint ? ' · 提示：' + escapeHtml(turn.hint) : ''}</div>
-      <button class="bubble-action" style="margin-top:10px;background:var(--paper);" data-speak="${escapeAttr(turn.en)}">🔊 聽範例</button>
-    `;
-    area.appendChild(card);
-    setStatus('照著上面的句子唸，按🎙️開始錄音');
+    setBubble({
+      speaker: userIsGhost ? '👻 You as Ghost' : '🎙️ Your turn',
+      en: turn.en,
+      zh: turn.zh,
+      hint: turn.hint || '照著這句話念，按🎙️錄音',
+      isUserTurn: true,
+    });
+    setStatus(userIsGhost ? '對著小幽靈說，按🎙️錄音' : '照著上面的句子唸，按🎙️錄音');
     document.getElementById('rec-btn').classList.remove('recording');
     document.getElementById('play-btn').disabled = true;
     document.getElementById('next-btn').disabled = true;
   } else {
-    // 對方輪 — 小幽靈說話
-    // 即時泡泡先顯示
-    setLiveBubble(turn.en, turn.zh, true);
+    // 小幽靈說話，頭上泡泡顯示他的話
     setGhostMood('talking');
-
-    // 也加進對話流
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble ' + (turn.speaker === 'ghost' ? 'ghost' : 'user');
-    bubble.innerHTML = `
-      <div class="speaker">${turn.speaker === 'ghost' ? '👻 Ghost' : '🧑 You'}</div>
-      <div class="en">${escapeHtml(turn.en)}</div>
-      <div class="zh">${escapeHtml(turn.zh)}</div>
-      <div class="bubble-actions">
-        <button class="bubble-action" data-speak="${escapeAttr(turn.en)}">🔊 再聽一次</button>
-      </div>
-    `;
-    area.appendChild(bubble);
+    setBubble({
+      speaker: '👻 Ghost',
+      en: turn.en,
+      zh: turn.zh,
+      hint: '',
+      isUserTurn: false,
+    });
     setStatus('🔊 小幽靈說話中...', true);
-    setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
 
-    // 朗讀完才往下一輪
+    // 朗讀完再切到下一輪
     await speak(turn.en);
     setGhostMood('happy');
     setStatus('準備換你...');
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 500));
     dialogIndex++;
     advanceDialog();
-    return;
   }
-  setTimeout(() => area.lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' }), 50);
 }
 
 function setStatus(text, live = false) {
@@ -2321,7 +2414,6 @@ async function startRecording() {
       document.getElementById('next-btn').disabled = false;
       setStatus('✅ 錄好了！按▶試聽，按✓進到下一句');
       setGhostMood('happy');
-      setLiveBubble('Nice! 想再錄就再錄一次 🎙️', '滿意就按 ✓ 繼續', true);
       stopMeter();
     };
     mediaRecorder.onerror = e => {
@@ -2334,7 +2426,6 @@ async function startRecording() {
     document.getElementById('rec-btn').classList.add('recording');
     setStatus('🔴 錄音中... 唸完再按一次停止', true);
     setGhostMood('listening');
-    setLiveBubble('🎧 我在仔細聽...', '說完再按一次停止', true);
     startMeter(stream);
   } catch (err) {
     console.error(err);
@@ -2419,27 +2510,7 @@ function playRecording() {
 }
 
 function confirmTurn() {
-  const card = document.getElementById('turn-card-' + dialogIndex);
-  const turn = currentLevelData.dialog[dialogIndex];
-  const rec = recordings[dialogIndex];
-
-  if (card) {
-    const bubble = document.createElement('div');
-    const isGhostBubble = userIsGhost;
-    bubble.className = 'bubble ' + (isGhostBubble ? 'ghost' : 'user');
-    const recId = 'rec-' + dialogIndex;
-    bubble.innerHTML = `
-      <div class="speaker">${isGhostBubble ? '👻 You as Ghost' : '🧑 You'}</div>
-      <div class="en">${escapeHtml(turn.en)}</div>
-      <div class="zh">${escapeHtml(turn.zh)}</div>
-      <div class="bubble-actions">
-        ${rec ? `<button class="bubble-action" data-play-rec="${dialogIndex}">▶ 重聽</button>` : ''}
-        <button class="bubble-action" data-speak="${escapeAttr(turn.en)}">🔊 範例</button>
-      </div>
-    `;
-    card.replaceWith(bubble);
-  }
-
+  // 用戶確認這一輪 — 直接進下一輪
   dialogIndex++;
   advanceDialog();
 }
